@@ -1,0 +1,34 @@
+# Flutter / Dart
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/build/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/*.iml
+mobile/.idea/
+
+# Node / Vite
+admin/node_modules/
+admin/dist/
+admin/.env
+admin/.env.local
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+
+# Secrets — never commit real keys
+*.env
+!.env.example
+**/keystore.jks
+**/*.keystore
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

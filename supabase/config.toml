@@ -1,0 +1,32 @@
+# CRASHX DEMO — Supabase CLI project config.
+# Used only if you choose to develop against a local Supabase stack
+# (requires Docker for local dev only — never for production, see
+# README). Not required if you're targeting a hosted Supabase project:
+# in that case apply supabase/migrations/*.sql via the SQL Editor or
+# `supabase db push` against the linked remote project.
+
+project_id = "crashx-demo"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://crashx.app"]
+jwt_expiry = 3600
+enable_signup = false # invitation-only: see activate-invitation Edge Function
+
+[edge_runtime]
+enabled = true
