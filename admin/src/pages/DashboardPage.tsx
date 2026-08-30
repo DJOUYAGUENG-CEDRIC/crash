@@ -49,11 +49,7 @@ export function DashboardPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-zinc-50">Tableau de bord</h1>
-        <p className="text-sm text-zinc-500">Vue d'ensemble de l'environnement de démonstration CRASHX.</p>
-      </div>
-
-      <div className="mb-6 rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-amber-400">
-        MODE DÉMONSTRATION — toutes les valeurs affichées sont en FCFA VIRTUELS, sans aucune valeur réelle.
+        <p className="text-sm text-zinc-500">Vue d'ensemble de CRASH.</p>
       </div>
 
       {loading ? (

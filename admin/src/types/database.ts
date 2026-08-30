@@ -50,7 +50,7 @@ export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   VIEW_STATISTICS: 'Voir les statistiques',
   VIEW_GAME: 'Voir le jeu en direct',
   CONTROL_GAME: 'Contrôler le jeu (arrêt, réglages)',
-  CONTROL_DEMO_MULTIPLIER: 'Contrôler le multiplicateur démo',
+  CONTROL_DEMO_MULTIPLIER: 'Contrôler le multiplicateur',
   VIEW_BETS: 'Voir les mises',
   MANAGE_USERS: 'Gérer les utilisateurs (ajuster le solde)',
   BLOCK_USERS: 'Bloquer / débloquer des utilisateurs',
@@ -256,10 +256,6 @@ export interface Database {
       };
       revoke_invitation: { Args: { p_invitation_id: string }; Returns: void };
       admin_force_crash: { Args: Record<string, never>; Returns: void };
-      schedule_demo_round: {
-        Args: { p_mode: DemoModeType; p_target_multiplier?: number | null };
-        Returns: void;
-      };
       update_game_operational_settings: {
         Args: {
           p_betting_duration_seconds: number;

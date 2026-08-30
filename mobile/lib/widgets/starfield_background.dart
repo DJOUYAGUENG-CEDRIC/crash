@@ -16,7 +16,7 @@ class StarfieldBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF15101F), Color(0xFF0B0D14)],
+          colors: [Color(0xFF171A3B), Color(0xFF121631)],
         ),
       ),
       child: CustomPaint(painter: _StarfieldPainter(), size: Size.infinite),
@@ -27,7 +27,7 @@ class StarfieldBackground extends StatelessWidget {
 class _StarfieldPainter extends CustomPainter {
   const _StarfieldPainter();
 
-  static const int _starCount = 60;
+  static const int _starCount = 18;
 
   @override
   void paint(Canvas canvas, Size size) {

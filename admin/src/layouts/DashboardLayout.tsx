@@ -12,6 +12,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { to: '/crash-schedule', label: 'Crashes prévus', icon: '🎯', permission: 'VIEW_GAME' },
   { to: '/', label: 'Tableau de bord', icon: '📊', permission: 'VIEW_DASHBOARD' },
   { to: '/game', label: 'Jeu', icon: '🚀', permission: 'VIEW_GAME' },
   { to: '/users', label: 'Utilisateurs', icon: '👥', permission: 'VIEW_USERS' },
@@ -57,13 +58,6 @@ export function DashboardLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="border-t border-zinc-800 px-3 py-3">
-          <div className="rounded-md bg-amber-500/10 px-3 py-2 text-[11px] font-medium leading-snug text-amber-400 ring-1 ring-inset ring-amber-500/20">
-            MODE DÉMONSTRATION
-            <br />
-            Argent virtuel uniquement
-          </div>
-        </div>
       </aside>
 
       <div className="flex flex-1 flex-col">

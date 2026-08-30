@@ -12,4 +12,4 @@ export function buildInvitationLink(token: string): string {
 }
 
 /** Currency label used everywhere money is displayed — never real money. */
-export const CURRENCY_LABEL = 'FCFA VIRTUELS';
+export const CURRENCY_LABEL = 'FCFA';

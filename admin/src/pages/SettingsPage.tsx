@@ -17,7 +17,7 @@ export function SettingsPage() {
   const [appSettings, setAppSettings] = useState<AppSettingsRow | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const canControlGame = hasPermission('CONTROL_GAME') || hasPermission('CONTROL_DEMO_MULTIPLIER');
+  const canControlGame = hasPermission('CONTROL_GAME');
 
   async function load() {
     setLoading(true);
@@ -41,7 +41,7 @@ export function SettingsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-zinc-50">Paramètres</h1>
-        <p className="text-sm text-zinc-500">Configuration du jeu démo et de l'application mobile.</p>
+        <p className="text-sm text-zinc-500">Configuration du jeu et de l'application mobile.</p>
       </div>
 
       {loading ? (
@@ -50,7 +50,7 @@ export function SettingsPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-zinc-300">Paramètres du jeu (démo)</h2>
+              <h2 className="text-sm font-semibold text-zinc-300">Paramètres du jeu</h2>
               {canControlGame && (
                 <Link to="/game" className="text-xs text-violet-400 hover:underline">
                   Modifier sur la page Jeu →
@@ -59,11 +59,7 @@ export function SettingsPage() {
             </div>
             {gameSettings ? (
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <InfoRow label="Mode démo" value={gameSettings.demo_mode === 'MANUAL' ? 'Manuel' : 'Automatique'} />
-                <InfoRow
-                  label="Prochain multiplicateur manuel"
-                  value={gameSettings.next_manual_target_multiplier ? `${gameSettings.next_manual_target_multiplier}x` : '—'}
-                />
+                <InfoRow label="Génération des cotes" value="Automatique" />
                 <InfoRow label="Durée des paris" value={`${gameSettings.betting_duration_seconds}s`} />
                 <InfoRow label="Mise minimum" value={formatAmount(gameSettings.min_bet)} />
                 <InfoRow label="Mise maximum" value={formatAmount(gameSettings.max_bet)} />

@@ -73,7 +73,7 @@ class SplashScreen extends ConsumerWidget {
         return _BlockedMessage(
           icon: Icons.system_update_rounded,
           title: 'Mise à jour requise',
-          message: 'Une nouvelle version est obligatoire pour continuer à utiliser CRASHX.',
+          message: 'Une nouvelle version est obligatoire pour continuer à utiliser CRASH.',
           actions: [
             FilledButton.icon(
               onPressed: downloadUrl == null
@@ -95,7 +95,7 @@ class SplashScreen extends ConsumerWidget {
         return _BlockedMessage(
           icon: Icons.phonelink_erase_rounded,
           title: 'Appareil non autorisé',
-          message: 'L\'accès à CRASHX depuis cet appareil a été révoqué.',
+          message: 'L\'accès à CRASH depuis cet appareil a été révoqué.',
           actions: [_signOutButton(ref)],
         );
       case 'DEVICE_LIMIT_REACHED':
@@ -109,14 +109,14 @@ class SplashScreen extends ConsumerWidget {
         return const _BlockedMessage(
           icon: Icons.build_rounded,
           title: 'Maintenance en cours',
-          message: 'CRASHX est temporairement indisponible pour maintenance. Merci de revenir plus tard.',
+          message: 'CRASH est temporairement indisponible pour maintenance. Merci de revenir plus tard.',
           actions: [],
         );
       default:
         return _BlockedMessage(
           icon: Icons.error_outline_rounded,
           title: 'Accès indisponible',
-          message: 'Impossible d\'accéder à CRASHX pour le moment.',
+          message: 'Impossible d\'accéder à CRASH pour le moment.',
           actions: [_signOutButton(ref)],
         );
     }
@@ -167,7 +167,6 @@ class _SplashLoading extends StatelessWidget {
           style: AppTextStyles.displayLarge.copyWith(color: AppColors.primaryVariant),
         ),
         const SizedBox(height: AppSpacing.sm),
-        Text(AppConstants.appTagline, style: AppTextStyles.caption),
         const SizedBox(height: AppSpacing.xxl),
         const CircularProgressIndicator(color: AppColors.primary),
       ],

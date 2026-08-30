@@ -77,7 +77,7 @@ class _ActivationScreenState extends ConsumerState<ActivationScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  "Saisissez le code d'invitation reçu ainsi que vos informations pour créer votre accès CRASHX.",
+                  "Saisissez le code d'invitation reçu ainsi que vos informations pour créer votre accès CRASH.",
                   style: AppTextStyles.bodyMuted,
                 ),
                 const SizedBox(height: AppSpacing.xl),

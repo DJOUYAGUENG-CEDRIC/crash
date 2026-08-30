@@ -64,11 +64,18 @@ end $$;
 -- scheduler (e.g. a free cron-ping service) every 10-15 seconds
 -- instead — game_tick() is idempotent, it just makes phase transitions
 -- less snappy.
+--
+-- 1 second (not more) matters here specifically for RUNNING rounds:
+-- the client animates the multiplier continuously from
+-- running_started_at, but the server only actually notices a round has
+-- crossed target_multiplier on the next tick — a slower tick means a
+-- wider window where the client's live number can visibly overshoot
+-- the crash_multiplier that gets revealed a moment later.
 -- ---------------------------------------------------------------------
 
 create extension if not exists pg_cron;
 
-select cron.schedule('crashx-game-tick', '2 seconds', $$select public.game_tick();$$);
+select cron.schedule('crashx-game-tick', '1 second', $$select public.game_tick();$$);
 
 -- ---------------------------------------------------------------------
 -- Done. Verify with:

@@ -3,6 +3,5 @@ class AppConstants {
   AppConstants._();
 
   static const String appName = 'CRASH';
-  static const String appTagline = 'ARGENT ';
-  static const String currencyLabel = 'FCFA ';
+  static const String currencyLabel = 'FCFA';
 }

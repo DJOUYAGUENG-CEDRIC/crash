@@ -1,9 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_radius.dart';
+import '../../core/constants/game_constants.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/formatters.dart';
@@ -11,10 +11,9 @@ import '../../models/enums.dart';
 import '../../models/game_round.dart';
 import '../../providers/game_providers.dart';
 import '../../widgets/crash_curve_painter.dart';
-import '../../widgets/demo_badge.dart';
+import '../../widgets/game_notice.dart';
 import '../../widgets/live_bets_table.dart';
 import '../../widgets/live_multiplier_builder.dart';
-import '../../widgets/round_multiplier_strip.dart';
 import '../../widgets/starfield_background.dart';
 import 'bet_panel.dart';
 
@@ -26,33 +25,38 @@ class CrashScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final round = ref.watch(currentRoundProvider).value;
-    final recentRounds = ref.watch(recentRoundsProvider).value ?? const [];
-
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.only(bottom: 72),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Crash', style: AppTextStyles.heading1),
-                const DemoBadge(label: 'ARGENT '),
-              ],
+            Container(
+              color: const Color(0xFF151936),
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+              child: Row(
+                children: [
+                  Expanded(child: _GameTab(label: 'Règles', outlined: true)),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: _GameTab(
+                      label: 'HISTORIQUE',
+                      icon: Icons.alarm,
+                      outlined: false,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            RoundMultiplierStrip(rounds: recentRounds),
-            const SizedBox(height: AppSpacing.lg),
             _GameStage(round: round),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: 5),
             LayoutBuilder(
               builder: (context, constraints) {
-                if (constraints.maxWidth < 380) {
+                if (constraints.maxWidth < 700) {
                   return const Column(
                     children: [
                       BetPanel(slot: 1),
-                      SizedBox(height: AppSpacing.md),
+                      SizedBox(height: 5),
                       BetPanel(slot: 2),
                     ],
                   );
@@ -67,7 +71,7 @@ class CrashScreen extends ConsumerWidget {
                 );
               },
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: 5),
             const LiveBetsTable(),
           ],
         ),
@@ -76,100 +80,471 @@ class CrashScreen extends ConsumerWidget {
   }
 }
 
-class _GameStage extends StatelessWidget {
+class _GameTab extends StatelessWidget {
+  const _GameTab({required this.label, required this.outlined, this.icon});
+
+  final String label;
+  final bool outlined;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 30,
+    decoration: BoxDecoration(
+      gradient: outlined
+          ? null
+          : const LinearGradient(
+              colors: [Color(0xFFFF6500), Color(0xFFF13D58)],
+            ),
+      border: Border.all(color: const Color(0xFFFF681B), width: 1.5),
+      borderRadius: BorderRadius.circular(7),
+    ),
+    alignment: Alignment.center,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 17, color: Colors.white),
+          const SizedBox(width: 5),
+        ],
+        Text(
+          label,
+          style: TextStyle(
+            color: outlined ? const Color(0xFFFF762F) : Colors.white,
+            fontSize: 13,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _GameStage extends StatefulWidget {
   const _GameStage({required this.round});
 
   final GameRound? round;
 
   @override
+  State<_GameStage> createState() => _GameStageState();
+}
+
+class _GameStageState extends State<_GameStage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _axisController;
+
+  @override
+  void initState() {
+    super.initState();
+    _axisController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 734),
+    );
+    _syncAxisAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant _GameStage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.round?.status != widget.round?.status) {
+      _syncAxisAnimation();
+    }
+  }
+
+  void _syncAxisAnimation() {
+    if (widget.round?.status == RoundStatus.running) {
+      if (!_axisController.isAnimating) {
+        _axisController.repeat();
+      }
+    } else {
+      _axisController
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _axisController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final round = widget.round;
     final status = round?.status;
     return Container(
-      height: 260,
+      height: 160,
       width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.lgRadius,
-        border: Border.all(color: AppColors.surfaceBorder),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFF151936)),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
         children: [
           const StarfieldBackground(),
+          AnimatedBuilder(
+            animation: _axisController,
+            builder: (context, child) => Positioned.fill(
+              child: CustomPaint(
+                painter: _StageBackdropPainter(_axisController.value),
+              ),
+            ),
+          ),
           switch (status) {
-            null || RoundStatus.waiting => const _StageMessage(label: 'EN ATTENTE DU PROCHAIN TOUR'),
-            RoundStatus.betting => _BettingStage(round: round!),
+            null => const _CountdownDisplay(
+              seconds: GameConstants.bettingDurationSeconds,
+            ),
+            RoundStatus.waiting ||
+            RoundStatus.betting => _WaitingStage(round: round!),
             RoundStatus.running => _RunningStage(round: round!),
-            RoundStatus.crashed || RoundStatus.result => _CrashedStage(round: round!),
+            RoundStatus.crashed ||
+            RoundStatus.result => _CrashedStage(round: round!),
           },
+          const Positioned(
+            left: 36,
+            right: 108,
+            top: 54,
+            child: Center(child: GameNoticeOverlay()),
+          ),
         ],
       ),
     );
   }
 }
 
-class _StageMessage extends StatelessWidget {
-  const _StageMessage({required this.label});
+class _StageBackdropPainter extends CustomPainter {
+  const _StageBackdropPainter(this.progress);
 
-  final String label;
+  final double progress;
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        label,
-        style: AppTextStyles.heading2.copyWith(color: AppColors.textSecondary),
-        textAlign: TextAlign.center,
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    final mountainPaint = Paint()
+      ..color = const Color(0xFF202653).withValues(alpha: .72);
+    final mountain = Path()
+      ..moveTo(0, size.height * .58)
+      ..lineTo(size.width * .08, size.height * .48)
+      ..lineTo(size.width * .15, size.height * .54)
+      ..lineTo(size.width * .25, size.height * .36)
+      ..lineTo(size.width * .34, size.height * .57)
+      ..lineTo(size.width * .45, size.height * .43)
+      ..lineTo(size.width * .55, size.height * .59)
+      ..lineTo(size.width * .68, size.height * .45)
+      ..lineTo(size.width * .78, size.height * .57)
+      ..lineTo(size.width * .89, size.height * .40)
+      ..lineTo(size.width, size.height * .55)
+      ..lineTo(size.width, size.height * .82)
+      ..quadraticBezierTo(
+        size.width * .7,
+        size.height * .72,
+        size.width * .48,
+        size.height * .82,
+      )
+      ..quadraticBezierTo(
+        size.width * .22,
+        size.height * .92,
+        0,
+        size.height * .72,
+      )
+      ..close();
+    canvas.drawPath(mountain, mountainPaint);
+
+    final dashPaint = Paint()
+      ..color = const Color(0xFFB2B8D0).withValues(alpha: .17)
+      ..strokeWidth = 1;
+    for (
+      double y = size.height * .16;
+      y < size.height * .76;
+      y += size.height * .18
+    ) {
+      for (double x = 18; x < size.width; x += 9) {
+        canvas.drawLine(
+          Offset(x, y),
+          Offset(math.min(x + 3, size.width), y),
+          dashPaint,
+        );
+      }
+    }
+
+    final dotPaint = Paint()
+      ..color = const Color(0xFFD5D9E8).withValues(alpha: .68);
+
+    const axisX = 14.0;
+    final axisY = size.height - 16;
+    const intersectionGap = 6.0;
+    final verticalStart = size.height * .10;
+    final verticalEnd = axisY - intersectionGap;
+    final verticalSpan = verticalEnd - verticalStart;
+    final verticalGap = verticalSpan / 6;
+    for (var i = 0; i < 6; i++) {
+      final y =
+          verticalStart +
+          ((i * verticalGap + progress * verticalGap) % verticalSpan);
+      canvas.drawCircle(Offset(axisX, y), 2.35, dotPaint);
+    }
+
+    final horizontalStart = axisX + intersectionGap;
+    final horizontalSpan = size.width - horizontalStart;
+    final horizontalGap = horizontalSpan / 6;
+    for (var i = 0; i < 6; i++) {
+      final shifted = i * horizontalGap - progress * horizontalGap;
+      final wrapped =
+          (shifted % horizontalSpan + horizontalSpan) % horizontalSpan;
+      canvas.drawCircle(
+        Offset(horizontalStart + wrapped, axisY),
+        2.4,
+        dotPaint,
+      );
+    }
   }
+
+  @override
+  bool shouldRepaint(covariant _StageBackdropPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
-class _BettingStage extends StatefulWidget {
-  const _BettingStage({required this.round});
+class _WaitingStage extends StatefulWidget {
+  const _WaitingStage({required this.round});
 
   final GameRound round;
 
   @override
-  State<_BettingStage> createState() => _BettingStageState();
+  State<_WaitingStage> createState() => _WaitingStageState();
 }
 
-class _BettingStageState extends State<_BettingStage> with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
-  int _elapsedSeconds = 0;
+class _WaitingStageState extends State<_WaitingStage>
+    with TickerProviderStateMixin {
+  late final AnimationController _particleController;
+  late final AnimationController _ballController;
 
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker(_onTick)..start();
+    _particleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+    _ballController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 820),
+    )..forward();
   }
 
-  void _onTick(Duration elapsed) {
-    final startedAt = widget.round.bettingStartedAt;
-    if (startedAt == null) return;
-    final next = DateTime.now().difference(startedAt).inSeconds;
-    if (next != _elapsedSeconds) setState(() => _elapsedSeconds = next);
+  @override
+  void didUpdateWidget(covariant _WaitingStage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.round.countdown != widget.round.countdown) {
+      _ballController.forward(from: 0);
+    }
   }
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _particleController.dispose();
+    _ballController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    final seconds = (widget.round.countdown ?? 0)
+        .clamp(0, GameConstants.bettingDurationSeconds)
+        .toInt();
+    return AnimatedBuilder(
+      animation: Listenable.merge([_particleController, _ballController]),
+      builder: (context, child) => Stack(
+        fit: StackFit.expand,
+        children: [
+          CustomPaint(
+            painter: _FallingDebrisPainter(_particleController.value),
+          ),
+          _CountdownDisplay(
+            seconds: seconds,
+            ballProgress: _ballController.value,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FallingDebrisPainter extends CustomPainter {
+  const _FallingDebrisPainter(this.progress);
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final random = math.Random(13307);
+    for (var i = 0; i < 7; i++) {
+      final x = size.width * (.38 + random.nextDouble() * .60);
+      final speed = .55 + random.nextDouble() * .75;
+      final phase = (progress * speed + random.nextDouble()) % 1;
+      final y = phase * (size.height + 24) - 12;
+      final opacity =
+          (.10 + random.nextDouble() * .20) * math.sin(math.pi * phase).abs();
+      final paint = Paint()
+        ..color = (i % 6 == 0 ? const Color(0xFFFF681B) : Colors.white)
+            .withValues(alpha: opacity)
+        ..strokeWidth = i % 6 == 0 ? 1.8 : 1.2
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(
+        Offset(x, y),
+        Offset(x - 1.5, y + 4 + random.nextDouble() * 3),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _FallingDebrisPainter oldDelegate) =>
+      oldDelegate.progress != progress;
+}
+
+class _CountdownDisplay extends StatelessWidget {
+  const _CountdownDisplay({required this.seconds, this.ballProgress = 0});
+
+  final int seconds;
+  final double ballProgress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
       children: [
-        const Icon(Icons.timer_outlined, color: AppColors.accent, size: 32),
-        const SizedBox(height: AppSpacing.sm),
-        Text('MISES OUVERTES', style: AppTextStyles.heading1.copyWith(color: AppColors.accent)),
-        const SizedBox(height: AppSpacing.xs),
-        Text('$_elapsedSeconds s', style: AppTextStyles.bodyMuted),
+        Positioned.fill(
+          child: CustomPaint(
+            painter: _CountdownPainter(
+              seconds: seconds,
+              ballProgress: ballProgress,
+            ),
+          ),
+        ),
+        Positioned(
+          right: 12,
+          bottom: 20,
+          child: Text(
+            '$seconds',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 40,
+              height: 1,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
       ],
     );
   }
+}
+
+class _CountdownPainter extends CustomPainter {
+  const _CountdownPainter({required this.seconds, required this.ballProgress});
+
+  final int seconds;
+  final double ballProgress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final count = seconds.clamp(0, GameConstants.bettingDurationSeconds);
+    final pivot = Offset(size.width * .72, size.height * .78);
+    final whitePaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 4.0
+      ..strokeCap = StrokeCap.round;
+    final orangePaint = Paint()
+      ..color = const Color(0xFFFF681B)
+      ..strokeWidth = 4.2
+      ..strokeCap = StrokeCap.round;
+
+    const startAngle = -115 * math.pi / 180;
+    const sweepAngle = 90 * math.pi / 180;
+    final radius = size.height * .53;
+
+    const visibleArcSlots = 5;
+
+    Offset pointFor(double slot) {
+      final t = (slot - 1) / (visibleArcSlots - 1);
+      final angle = startAngle + sweepAngle * t;
+      return Offset(
+        pivot.dx + radius * (math.sin(angle) - math.sin(startAngle)),
+        pivot.dy + radius * (-math.cos(angle) + math.cos(startAngle)),
+      );
+    }
+
+    Offset directionFor(double slot) {
+      final markAngle =
+          ((slot - 1) * 90 / (visibleArcSlots - 1)) * math.pi / 180;
+      return Offset(math.cos(markAngle), math.sin(markAngle));
+    }
+
+    final remainingTicks = count.clamp(1, GameConstants.bettingDurationSeconds);
+    final phase = ballProgress.clamp(0.0, 1.0);
+
+    // One mark disappears while the ball rises. As the ball comes back,
+    // every remaining mark advances exactly one position towards it.
+    // This leaves the ball aligned with the following second at rest.
+    final currentHasDisappeared = remainingTicks > 1 && phase >= .50;
+    final advance = remainingTicks > 1
+        ? Curves.easeInOutCubic.transform(((phase - .50) / .44).clamp(0.0, 1.0))
+        : 0.0;
+    final visibleCount = math.min(remainingTicks, visibleArcSlots);
+
+    for (var slot = 1; slot <= visibleCount; slot++) {
+      if (slot == 1 && currentHasDisappeared) continue;
+      final movingSlot = slot == 1 ? 1.0 : slot - advance;
+      final point = pointFor(movingSlot);
+      final direction = directionFor(movingSlot);
+      final isOrange =
+          remainingTicks <= visibleArcSlots && slot == visibleCount;
+      canvas.drawLine(
+        point - direction * (isOrange ? 5.3 : 5.0),
+        point + direction * (isOrange ? 5.3 : 5.0),
+        isOrange ? orangePaint : whitePaint,
+      );
+    }
+
+    // At 7 a white mark enters. At 6 the entering mark is orange; it then
+    // stays orange and advances one position per second until it reaches 1.
+    if (remainingTicks > visibleArcSlots) {
+      final incomingSlot = visibleArcSlots + 1 - advance;
+      if (advance > 0) {
+        final reveal = advance;
+        final point = pointFor(incomingSlot);
+        final direction = directionFor(incomingSlot);
+        final incomingIsOrange = remainingTicks == visibleArcSlots + 1;
+        final enteringPaint = Paint()
+          ..color = (incomingIsOrange ? orangePaint.color : Colors.white)
+              .withValues(alpha: reveal)
+          ..strokeWidth = incomingIsOrange ? 4.2 : 4.0
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(
+          point - direction * (incomingIsOrange ? 5.3 : 5.0) * reveal,
+          point + direction * (incomingIsOrange ? 5.3 : 5.0) * reveal,
+          enteringPaint,
+        );
+      }
+    }
+
+    const alignmentGap = Offset(14, 0);
+    final restingPoint = pointFor(1) + alignmentGap;
+    final intervalPoint = remainingTicks > 1
+        ? Offset.lerp(pointFor(1), pointFor(2), .42)! + alignmentGap
+        : restingPoint + const Offset(0, -9);
+
+    double excursion;
+    if (phase < .50) {
+      excursion = Curves.easeOutCubic.transform(phase / .50);
+    } else {
+      excursion = 1 - Curves.easeInCubic.transform((phase - .50) / .50);
+    }
+
+    final ballPoint = Offset.lerp(restingPoint, intervalPoint, excursion)!;
+    canvas.drawCircle(ballPoint, 5.0, whitePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CountdownPainter oldDelegate) =>
+      oldDelegate.seconds != seconds ||
+      oldDelegate.ballProgress != ballProgress;
 }
 
 class _RunningStage extends StatelessWidget {
@@ -182,23 +557,90 @@ class _RunningStage extends StatelessWidget {
     return LiveMultiplierBuilder(
       round: round,
       builder: (context, multiplier) {
-        final elapsedSeconds = round.runningStartedAt == null
+        final rawElapsedSeconds = round.runningStartedAt == null
             ? 0.0
-            : DateTime.now().difference(round.runningStartedAt!).inMilliseconds / 1000.0;
+            : DateTime.now()
+                      .difference(round.runningStartedAt!)
+                      .inMilliseconds /
+                  1000.0;
+        final target = round.targetMultiplier;
+        final reachedTarget = target != null && multiplier >= target;
+        final crashElapsedSeconds = target == null || target <= 1
+            ? rawElapsedSeconds
+            : math.log(target) / GameConstants.growthRate;
+        final elapsedSeconds = reachedTarget
+            ? math.min(rawElapsedSeconds, crashElapsedSeconds)
+            : rawElapsedSeconds;
         return Stack(
           fit: StackFit.expand,
           children: [
             CustomPaint(
-              painter: CrashCurvePainter(multiplier: multiplier, elapsedSeconds: elapsedSeconds, crashed: false),
+              painter: CrashCurvePainter(
+                multiplier: multiplier,
+                elapsedSeconds: elapsedSeconds,
+                crashed: reachedTarget,
+                drawPlane: false,
+              ),
             ),
-            Center(
-              child: Text(Formatters.multiplier(multiplier), style: AppTextStyles.multiplier),
+            if (!reachedTarget) _PlaneSprite(elapsedSeconds: elapsedSeconds),
+            Positioned(
+              right: 22,
+              bottom: 18,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    Formatters.multiplier(multiplier),
+                    style: AppTextStyles.multiplier.copyWith(
+                      fontSize: multiplier >= 10 ? 40 : 48,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         );
       },
     );
   }
+}
+
+class _PlaneSprite extends StatelessWidget {
+  const _PlaneSprite({required this.elapsedSeconds});
+
+  final double elapsedSeconds;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final t = (elapsedSeconds / CrashCurvePainter.animationDurationSeconds)
+          .clamp(0.0, 1.0);
+      final width = constraints.maxWidth;
+      final height = constraints.maxHeight;
+      final x = width * (.02 + (.73 - .02) * t);
+      final topClearance = math.min(28.0, height * .32);
+      final startY = height * .92;
+      const k = 2.35;
+      final ease = (math.exp(k * t) - 1) / (math.exp(k) - 1);
+      final y = startY - (startY - topClearance) * ease;
+      return Stack(
+        children: [
+          Positioned(
+            left: x - 57,
+            top: y - 28,
+            width: 64,
+            height: 52,
+            child: Image.asset(
+              'assets/images/crash_plane_v2.png',
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class _CrashedStage extends StatelessWidget {
@@ -209,29 +651,40 @@ class _CrashedStage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final crashValue = round.crashMultiplier ?? 1.0;
-    final elapsedSeconds = (round.runningStartedAt == null || round.crashedAt == null)
-        ? 12.0
-        : round.crashedAt!.difference(round.runningStartedAt!).inMilliseconds / 1000.0;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        CustomPaint(
-          painter: CrashCurvePainter(multiplier: crashValue, elapsedSeconds: elapsedSeconds, crashed: true),
-        ),
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                Formatters.multiplier(crashValue),
-                style: AppTextStyles.multiplier.copyWith(color: AppColors.crashRed),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text('CRASHÉ', style: AppTextStyles.heading2.copyWith(color: AppColors.crashRed)),
-            ],
+    // Place the final frame at the exact instant where exp(rate * t) reaches
+    // the authoritative crash value. A delayed server tick must never move
+    // the plane beyond the announced value and then make it jump backwards.
+    final elapsedSeconds = crashValue <= 1
+        ? 0.0
+        : math.log(crashValue) / GameConstants.growthRate;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 1050),
+      curve: Curves.linear,
+      builder: (context, explosionProgress, child) => Stack(
+        fit: StackFit.expand,
+        children: [
+          CustomPaint(
+            painter: CrashCurvePainter(
+              multiplier: crashValue,
+              elapsedSeconds: elapsedSeconds,
+              crashed: true,
+              explosionProgress: explosionProgress,
+            ),
           ),
-        ),
-      ],
+          Positioned(
+            right: 22,
+            bottom: 16,
+            child: Text(
+              Formatters.multiplier(crashValue),
+              style: AppTextStyles.multiplier.copyWith(
+                color: Colors.white,
+                fontSize: crashValue >= 10 ? 40 : 48,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

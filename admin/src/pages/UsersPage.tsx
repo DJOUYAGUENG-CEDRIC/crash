@@ -79,7 +79,7 @@ export function UsersPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-zinc-50">Utilisateurs</h1>
-          <p className="text-sm text-zinc-500">Comptes joueurs et soldes en FCFA virtuels.</p>
+          <p className="text-sm text-zinc-500">Comptes joueurs et soldes en FCFA.</p>
         </div>
         <TextInput
           placeholder="Rechercher un utilisateur…"
@@ -96,7 +96,7 @@ export function UsersPage() {
               <th className="px-4 py-3">Nom</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Statut</th>
-              <th className="px-4 py-3">Solde virtuel</th>
+              <th className="px-4 py-3">Solde</th>
               <th className="px-4 py-3">Dernière activité</th>
               <th className="px-4 py-3">Créé le</th>
               <th className="px-4 py-3 text-right">Actions</th>
@@ -229,7 +229,7 @@ function AdjustBalanceModal({
       <form onSubmit={handleSubmit}>
         <p className="mb-3 text-xs text-zinc-500">
           Solde actuel : <span className="font-medium text-zinc-300">{formatAmount(user.balance)}</span>. Le
-          montant peut être positif (crédit) ou négatif (débit), en FCFA virtuels.
+          montant peut être positif (crédit) ou négatif (débit), en FCFA.
         </p>
         <FieldWrapper label="Montant (positif ou négatif)">
           <TextInput
@@ -246,7 +246,7 @@ function AdjustBalanceModal({
             type="text"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="ex: Correction manuelle démo"
+            placeholder="ex: Correction manuelle"
             required
           />
         </FieldWrapper>

@@ -61,7 +61,7 @@ export function StatisticsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-zinc-50">Statistiques</h1>
-        <p className="text-sm text-zinc-500">Activité de jeu sur les 14 derniers jours (démo, argent virtuel).</p>
+        <p className="text-sm text-zinc-500">Activité de jeu sur les 14 derniers jours.</p>
       </div>
 
       {loading || !data ? (
@@ -80,7 +80,7 @@ export function StatisticsPage() {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Misé vs payé (FCFA virtuels)">
+          <ChartCard title="Misé vs payé (FCFA)">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={data.wageredVsPaid} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />

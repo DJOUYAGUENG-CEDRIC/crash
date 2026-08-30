@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { DemoModeType, GameRoundRow, GameSettingsRow } from '../types/database';
+import type { GameRoundRow, GameSettingsRow } from '../types/database';
 
 export async function getCurrentRound(): Promise<GameRoundRow | null> {
   const { data, error } = await supabase
@@ -12,6 +12,17 @@ export async function getCurrentRound(): Promise<GameRoundRow | null> {
   return data;
 }
 
+/** Admin-only rounds, including the server-generated target multiplier. */
+export async function getCrashSchedule(limit = 25): Promise<GameRoundRow[]> {
+  const { data, error } = await supabase
+    .from('game_rounds')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function getGameSettings(): Promise<GameSettingsRow | null> {
   const { data, error } = await supabase.from('game_settings').select('*').eq('id', 1).maybeSingle();
   if (error) throw error;
@@ -20,14 +31,6 @@ export async function getGameSettings(): Promise<GameSettingsRow | null> {
 
 export async function forceCrash(): Promise<void> {
   const { error } = await supabase.rpc('admin_force_crash');
-  if (error) throw error;
-}
-
-export async function scheduleDemoRound(mode: DemoModeType, targetMultiplier: number | null): Promise<void> {
-  const { error } = await supabase.rpc('schedule_demo_round', {
-    p_mode: mode,
-    p_target_multiplier: targetMultiplier,
-  });
   if (error) throw error;
 }
 

@@ -8,12 +8,13 @@ import '../../screens/crash/crash_screen.dart';
 import '../../screens/history/history_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/profile/profile_screen.dart';
+import '../../screens/schedule/crash_schedule_screen.dart';
 import '../../screens/shell/main_shell.dart';
 import '../../screens/splash/splash_screen.dart';
 
 /// App-wide navigation graph. `/` (splash) is where auth + activation are
 /// enforced (see SplashScreen's doc comment); everything under the
-/// [StatefulShellRoute] shares the persistent 5-tab bottom nav (spec §14).
+/// [StatefulShellRoute] shares the persistent bottom navigation (spec §14).
 class AppRouter {
   AppRouter._();
 
@@ -37,6 +38,9 @@ class AppRouter {
           ),
           StatefulShellBranch(
             routes: [GoRoute(path: '/history', builder: (context, state) => const HistoryScreen())],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: '/schedule', builder: (context, state) => const CrashScheduleScreen())],
           ),
           StatefulShellBranch(
             routes: [GoRoute(path: '/bonus', builder: (context, state) => const BonusScreen())],

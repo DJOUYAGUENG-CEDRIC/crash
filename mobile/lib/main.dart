@@ -16,17 +16,17 @@ Future<void> main() async {
   }
 
   await SupabaseService.initialize();
-  runApp(const ProviderScope(child: CrashXApp()));
+  runApp(const ProviderScope(child: CrashApp()));
 }
 
-class CrashXApp extends ConsumerStatefulWidget {
-  const CrashXApp({super.key});
+class CrashApp extends ConsumerStatefulWidget {
+  const CrashApp({super.key});
 
   @override
-  ConsumerState<CrashXApp> createState() => _CrashXAppState();
+  ConsumerState<CrashApp> createState() => _CrashAppState();
 }
 
-class _CrashXAppState extends ConsumerState<CrashXApp> with WidgetsBindingObserver {
+class _CrashAppState extends ConsumerState<CrashApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -52,7 +52,7 @@ class _CrashXAppState extends ConsumerState<CrashXApp> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'CRASHX',
+      title: 'CRASH',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       darkTheme: AppTheme.dark,

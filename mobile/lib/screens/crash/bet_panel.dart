@@ -3,26 +3,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/game_constants.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_radius.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/bet_validation.dart';
 import '../../core/utils/error_messages.dart';
 import '../../core/utils/formatters.dart';
-import '../../models/bet.dart';
 import '../../models/enums.dart';
 import '../../models/game_round.dart';
 import '../../providers/game_providers.dart';
 import '../../providers/service_providers.dart';
-import '../../widgets/live_multiplier_builder.dart';
+import '../../widgets/game_notice.dart';
 
 /// One independent betting slot (spec §17/§26 — "MISE 1" / "MISE 2"):
 /// amount stepper + quick chips + custom input, an optional
 /// auto-cashout multiplier, a MISER button (only enabled while the round
 /// is accepting bets and this slot hasn't already bet this round) and an
-/// ENCAISSER button that appears once this slot's bet goes ACTIVE and the
-/// round starts RUNNING, showing the live potential payout.
+/// OBTENIR button that appears once this slot's bet goes ACTIVE and the
+/// round starts RUNNING. The confirmed gain is only shown after the tap.
 class BetPanel extends ConsumerStatefulWidget {
   const BetPanel({super.key, required this.slot});
 
@@ -33,8 +28,6 @@ class BetPanel extends ConsumerStatefulWidget {
 }
 
 class _BetPanelState extends ConsumerState<BetPanel> {
-  static const double _step = 100;
-
   double _amount = GameConstants.quickBetAmounts.first;
   bool _autoCashoutEnabled = false;
   bool _isSubmitting = false;
@@ -66,7 +59,9 @@ class _BetPanelState extends ConsumerState<BetPanel> {
   Future<void> _placeBet(String roundId) async {
     double? autoCashout;
     if (_autoCashoutEnabled) {
-      final parsed = double.tryParse(_autoCashoutController.text.replaceAll(',', '.'));
+      final parsed = double.tryParse(
+        _autoCashoutController.text.replaceAll(',', '.'),
+      );
       if (parsed == null || !BetValidation.isValidAutoCashout(parsed)) {
         _showSnack(
           "Multiplicateur d'encaissement automatique invalide "
@@ -81,7 +76,13 @@ class _BetPanelState extends ConsumerState<BetPanel> {
     try {
       await ref
           .read(gameServiceProvider)
-          .placeBet(roundId: roundId, slot: widget.slot, amount: _amount, autoCashoutMultiplier: autoCashout);
+          .placeBet(
+            roundId: roundId,
+            slot: widget.slot,
+            amount: _amount,
+            autoCashoutMultiplier: autoCashout,
+          );
+      gameNoticeController.show('Votre pari est accepté !');
     } catch (error) {
       _showSnack(friendlyBetErrorMessage(error));
     } finally {
@@ -92,7 +93,10 @@ class _BetPanelState extends ConsumerState<BetPanel> {
   Future<void> _cashout(String betId) async {
     setState(() => _isSubmitting = true);
     try {
-      await ref.read(gameServiceProvider).cashout(betId);
+      final cashedOutBet = await ref.read(gameServiceProvider).cashout(betId);
+      gameNoticeController.show(
+        'Vous avez gagné : ${Formatters.amount(cashedOutBet.payout ?? 0)} XAF',
+      );
     } catch (error) {
       _showSnack(friendlyBetErrorMessage(error));
     } finally {
@@ -102,7 +106,8 @@ class _BetPanelState extends ConsumerState<BetPanel> {
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -111,105 +116,234 @@ class _BetPanelState extends ConsumerState<BetPanel> {
     final myBets = ref.watch(myBetsForCurrentRoundProvider).value ?? const [];
     final myBet = myBets.where((b) => b.slot == widget.slot).firstOrNull;
 
-    final canBet = round?.status == RoundStatus.betting && myBet == null;
-    final canCashout = myBet != null && myBet.status == BetStatus.active && round?.status == RoundStatus.running;
+    final canBet =
+        (round?.status == RoundStatus.waiting ||
+            round?.status == RoundStatus.betting) &&
+        (round?.countdown ?? 1) > 0 &&
+        myBet == null;
+    final canCashout =
+        myBet != null &&
+        myBet.status == BetStatus.active &&
+        round?.status == RoundStatus.running;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.lgRadius,
-        border: Border.all(color: AppColors.surfaceBorder),
+        color: const Color(0xFF171B3B),
+        borderRadius: BorderRadius.circular(7),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('MISE ${widget.slot}', style: AppTextStyles.heading2),
-          const SizedBox(height: AppSpacing.sm),
-          if (myBet != null) ...[
-            _BetStatusLine(bet: myBet),
-            if (canCashout) ...[
-              const SizedBox(height: AppSpacing.sm),
-              LiveMultiplierBuilder(
-                round: round,
-                builder: (context, multiplier) {
-                  final potential = myBet.amount * multiplier;
-                  return ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-                    onPressed: _isSubmitting ? null : () => _cashout(myBet.id),
-                    child: Text('ENCAISSER ${Formatters.amount(potential)} FCFA'),
-                  );
-                },
-              ),
-            ],
-          ] else ...[
-            Row(
+          Expanded(
+            flex: 3,
+            child: Column(
               children: [
-                _StepButton(icon: Icons.remove, onTap: () => _setAmount(_amount - _step)),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-                    child: TextField(
-                      controller: _amountController,
+                SizedBox(
+                  height: 40,
+                  child: TextField(
+                    controller: _amountController,
+                    enabled: myBet == null,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    style: const TextStyle(
+                      color: Color(0xFF171B3B),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(5),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(5),
+                        borderSide: const BorderSide(color: Color(0xFF7885B5)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(5),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFFF681B),
+                          width: 2,
+                        ),
+                      ),
+                      suffixIconConstraints: const BoxConstraints(
+                        minWidth: 40,
+                        minHeight: 40,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(
+                          Icons.close,
+                          color: Color(0xFF20264B),
+                          size: 24,
+                        ),
+                        onPressed: () =>
+                            _setAmount(GameConstants.quickBetAmounts.first),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      final parsed = double.tryParse(value);
+                      if (parsed != null) {
+                        setState(() => _amount = parsed);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 5),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 4,
+                  crossAxisSpacing: 5,
+                  childAspectRatio: 1.9,
+                  children: [
+                    for (final quick in GameConstants.quickBetAmounts)
+                      _QuickChip(
+                        amount: quick,
+                        selected: _amount == quick,
+                        onTap: myBet == null ? () => _setAmount(quick) : () {},
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                InkWell(
+                  onTap: () => setState(
+                    () => _autoCashoutEnabled = !_autoCashoutEnabled,
+                  ),
+                  borderRadius: BorderRadius.circular(5),
+                  child: Container(
+                    height: 42,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: _autoCashoutEnabled
+                          ? const Color(0x22FF681B)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(
+                        color: const Color(0xFFFF681B),
+                        width: 1.5,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      _autoCashoutEnabled
+                          ? 'JEU AUTOMATIQUE\nACTIVÉ'
+                          : 'ACTIVER LE JEU\nAUTOMATIQUE',
                       textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      style: AppTextStyles.body,
-                      decoration: const InputDecoration(isDense: true, suffixText: 'FCFA'),
-                      onChanged: (value) {
-                        final parsed = double.tryParse(value);
-                        if (parsed != null) setState(() => _amount = parsed);
-                      },
+                      style: const TextStyle(
+                        color: Color(0xFFFF762F),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
-                _StepButton(icon: Icons.add, onTap: () => _setAmount(_amount + _step)),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children: [
-                for (final quick in GameConstants.quickBetAmounts)
-                  _QuickChip(amount: quick, selected: _amount == quick, onTap: () => _setAmount(quick)),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Switch(
-                  value: _autoCashoutEnabled,
-                  onChanged: (value) => setState(() => _autoCashoutEnabled = value),
-                ),
-                Expanded(child: Text('Auto-encaissement', style: AppTextStyles.bodyMuted)),
-                if (_autoCashoutEnabled)
+                if (_autoCashoutEnabled) ...[
+                  const SizedBox(height: 5),
                   SizedBox(
-                    width: 64,
+                    height: 37,
                     child: TextField(
                       controller: _autoCashoutController,
                       textAlign: TextAlign.center,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-                      style: AppTextStyles.body,
-                      decoration: const InputDecoration(isDense: true, suffixText: 'x'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                      ],
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        suffixText: 'x',
+                        contentPadding: EdgeInsets.all(8),
+                      ),
                     ),
                   ),
+                ],
+                const SizedBox(height: 5),
+                SizedBox(
+                  height: _autoCashoutEnabled ? 55 : 66,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: canCashout
+                          ? const Color(0xFFFFB20F)
+                          : const Color(0xFFFF620D),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(0xFF80432D),
+                      disabledForegroundColor: Colors.white38,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                    ),
+                    onPressed: _isSubmitting
+                        ? null
+                        : canCashout
+                        ? () => _cashout(myBet.id)
+                        : (canBet && round != null)
+                        ? () => _placeBet(round.id)
+                        : null,
+                    child: _isSubmitting
+                        ? const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          )
+                        : canCashout
+                        ? const Text(
+                            'OBTENIR',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          )
+                        : FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  canBet
+                                      ? 'PLACER UN PARI'
+                                      : _disabledReason(round),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                if (canBet)
+                                  const Text(
+                                    '(sur le prochain tour)',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: AppSpacing.sm),
-            ElevatedButton(
-              onPressed: (canBet && !_isSubmitting && round != null) ? () => _placeBet(round.id) : null,
-              child: _isSubmitting
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textPrimary),
-                    )
-                  : Text(canBet ? 'MISER' : _disabledReason(round)),
-            ),
-          ],
+          ),
         ],
       ),
     );
@@ -227,55 +361,12 @@ class _BetPanelState extends ConsumerState<BetPanel> {
   }
 }
 
-class _BetStatusLine extends StatelessWidget {
-  const _BetStatusLine({required this.bet});
-
-  final Bet bet;
-
-  @override
-  Widget build(BuildContext context) {
-    final (String label, Color color) = switch (bet.status) {
-      BetStatus.pending => ('Mise en attente — ${Formatters.amount(bet.amount)} FCFA', AppColors.textSecondary),
-      BetStatus.active => ('Mise active — ${Formatters.amount(bet.amount)} FCFA', AppColors.primaryVariant),
-      BetStatus.cashedOut => (
-        'Encaissé à ${Formatters.multiplier(bet.cashoutMultiplier ?? 0)} — +${Formatters.amount(bet.payout ?? 0)} FCFA',
-        AppColors.success,
-      ),
-      BetStatus.lost => ('Perdu — ${Formatters.amount(bet.amount)} FCFA', AppColors.danger),
-      BetStatus.cancelled => ('Mise annulée', AppColors.textSecondary),
-    };
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: AppRadius.smRadius),
-      child: Text(label, style: AppTextStyles.body.copyWith(color: color, fontWeight: FontWeight.w600)),
-    );
-  }
-}
-
-class _StepButton extends StatelessWidget {
-  const _StepButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: AppRadius.smRadius,
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(color: AppColors.surfaceElevated, borderRadius: AppRadius.smRadius),
-        child: Icon(icon, size: 18, color: AppColors.textPrimary),
-      ),
-    );
-  }
-}
-
 class _QuickChip extends StatelessWidget {
-  const _QuickChip({required this.amount, required this.selected, required this.onTap});
+  const _QuickChip({
+    required this.amount,
+    required this.selected,
+    required this.onTap,
+  });
 
   final double amount;
   final bool selected;
@@ -284,15 +375,31 @@ class _QuickChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: AppRadius.pillRadius,
+      borderRadius: BorderRadius.circular(5),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+        constraints: const BoxConstraints(minWidth: 48),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.surfaceElevated,
-          borderRadius: AppRadius.pillRadius,
+          color: selected ? const Color(0xFF3B3F78) : const Color(0xFF2A2F61),
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(
+            color: selected ? const Color(0xFFFF681B) : const Color(0xFF3C4276),
+          ),
         ),
-        child: Text(Formatters.amount(amount), style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary)),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            Formatters.amount(amount),
+            maxLines: 1,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }

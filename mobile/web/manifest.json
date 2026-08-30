@@ -1,6 +1,6 @@
 {
-    "name": "crashx",
-    "short_name": "crashx",
+    "name": "Crash",
+    "short_name": "Crash",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

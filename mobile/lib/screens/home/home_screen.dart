@@ -195,7 +195,7 @@ class _StatsRow extends StatelessWidget {
         Expanded(child: _StatTile(label: 'Tours récents', value: '$roundsToday')),
         const SizedBox(width: AppSpacing.md),
         const Expanded(
-          child: _StatTile(label: 'Mode', value: 'DÉMO', valueColor: AppColors.demoBadgeText),
+          child: _StatTile(label: 'Mode', value: ''),
         ),
       ],
     );

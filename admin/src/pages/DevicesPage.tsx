@@ -50,7 +50,7 @@ export function DevicesPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-zinc-50">Appareils</h1>
-        <p className="text-sm text-zinc-500">Appareils autorisés à se connecter à l'application démo.</p>
+        <p className="text-sm text-zinc-500">Appareils autorisés à se connecter à l'application.</p>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-zinc-800">

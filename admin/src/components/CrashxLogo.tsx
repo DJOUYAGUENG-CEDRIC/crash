@@ -5,7 +5,7 @@ export function CrashxLogo({ className = '' }: { className?: string }) {
         ⚡
       </span>
       <span className="bg-gradient-to-r from-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
-        CRASHX
+        CRASH
       </span>
     </span>
   );

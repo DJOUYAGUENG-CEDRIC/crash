@@ -13,7 +13,7 @@ String friendlyBetErrorMessage(Object error) {
     case 'INVALID_AUTO_CASHOUT':
       return "Multiplicateur d'encaissement automatique invalide.";
     case 'INSUFFICIENT_FUNDS':
-      return 'Solde virtuel insuffisant.';
+      return 'Solde insuffisant.';
     case 'ACCESS DENIED':
       return 'Accès refusé.';
     case 'BET_NOT_ACTIVE':
@@ -40,6 +40,10 @@ String friendlyActivationErrorMessage(Object error) {
       return "Ce code d'invitation a déjà été utilisé ou révoqué.";
     case 'INVALID_INPUT':
       return 'Informations invalides. Vérifiez les champs saisis.';
+    case 'ACCOUNT_CREATION_FAILED':
+      return "Impossible de créer le compte. L'adresse e-mail est peut-être déjà utilisée.";
+    case 'ACCOUNT_CREATED_SIGN_IN_FAILED':
+      return 'Le compte a été créé. Revenez à la connexion et utilisez le même e-mail et mot de passe.';
     default:
       return "L'activation a échoué. Réessayez.";
   }

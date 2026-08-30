@@ -6,6 +6,7 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { GamePage } from './pages/GamePage';
+import { CrashSchedulePage } from './pages/CrashSchedulePage';
 import { UsersPage } from './pages/UsersPage';
 import { SubAdminsPage } from './pages/SubAdminsPage';
 import { DevicesPage } from './pages/DevicesPage';
@@ -46,6 +47,14 @@ function App() {
                 element={
                   <ProtectedRoute permission="VIEW_GAME">
                     <GamePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/crash-schedule"
+                element={
+                  <ProtectedRoute permission="VIEW_GAME">
+                    <CrashSchedulePage />
                   </ProtectedRoute>
                 }
               />

@@ -11,10 +11,9 @@ import {
   getCurrentRound,
   getGameSettings,
   forceCrash,
-  scheduleDemoRound,
   updateGameOperationalSettings,
 } from '../services/game';
-import type { GameRoundRow, GameSettingsRow, DemoModeType } from '../types/database';
+import type { GameRoundRow, GameSettingsRow } from '../types/database';
 import { formatAmount, formatDate, formatMultiplier, formatRoundNumber } from '../lib/format';
 
 export function GamePage() {
@@ -28,7 +27,6 @@ export function GamePage() {
   const [crashing, setCrashing] = useState(false);
 
   const canControlGame = hasPermission('CONTROL_GAME');
-  const canControlDemo = hasPermission('CONTROL_DEMO_MULTIPLIER');
 
   async function load() {
     try {
@@ -83,7 +81,7 @@ export function GamePage() {
       </div>
 
       <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-400">
-        MODE DÉMONSTRATION — ARGENT VIRTUEL
+        CONTRÔLE DU JEU
       </div>
 
       {loading ? (
@@ -98,10 +96,26 @@ export function GamePage() {
                   <span className="text-2xl font-bold text-zinc-50">{formatRoundNumber(round.round_number)}</span>
                   <RoundStatusBadge status={round.status} />
                 </div>
+
+                {/* Admin-only visibility (VIEW_GAME): the exact crash point is
+                    never exposed to players — see game_rounds_public /
+                    spec §12. Kept prominent here since it's the whole
+                    point of this permission. */}
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-400">
+                    Cote de crash programmée (visible admin uniquement)
+                  </p>
+                  <p className="mt-1 text-3xl font-bold text-amber-300">
+                    {formatMultiplier(round.target_multiplier)}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Jamais visible par les joueurs — révélée dans l'app uniquement une fois la manche terminée.
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <InfoRow label="Multiplicateur cible" value={formatMultiplier(round.target_multiplier)} />
-                  <InfoRow label="Multiplicateur crash" value={formatMultiplier(round.crash_multiplier)} />
-                  <InfoRow label="Mode démo" value={round.demo_mode === 'MANUAL' ? 'Manuel' : 'Automatique'} />
+                  <InfoRow label="Multiplicateur crash (révélé)" value={formatMultiplier(round.crash_multiplier)} />
+                  <InfoRow label="Mode" value={round.demo_mode === 'MANUAL' ? 'Manuel' : 'Automatique'} />
                   <InfoRow label="Joueurs" value={String(round.total_players)} />
                   <InfoRow label="Total misé" value={formatAmount(round.total_bets_amount)} />
                   <InfoRow label="Débuté (paris)" value={formatDate(round.betting_started_at)} />
@@ -128,10 +142,6 @@ export function GamePage() {
               <p className="text-sm text-zinc-500">Aucune manche trouvée.</p>
             )}
           </section>
-
-          {canControlDemo && (
-            <DemoControlPanel onScheduled={() => showSuccess('Manche programmée.')} onError={showError} />
-          )}
 
           {canControlGame && settings && (
             <OperationalSettingsPanel
@@ -166,86 +176,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <p className="text-xs text-zinc-500">{label}</p>
       <p className="font-medium text-zinc-200">{value}</p>
     </div>
-  );
-}
-
-function DemoControlPanel({
-  onScheduled,
-  onError,
-}: {
-  onScheduled: () => void;
-  onError: (msg: string) => void;
-}) {
-  const [mode, setMode] = useState<DemoModeType>('AUTOMATIC');
-  const [target, setTarget] = useState('2.00');
-  const [saving, setSaving] = useState(false);
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const parsedTarget = mode === 'MANUAL' ? Number(target) : null;
-      if (mode === 'MANUAL' && (!parsedTarget || parsedTarget < 1)) {
-        onError('Le multiplicateur cible doit être supérieur ou égal à 1.00.');
-        return;
-      }
-      await scheduleDemoRound(mode, parsedTarget);
-      onScheduled();
-    } catch (err) {
-      onError(errorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <section className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-5">
-      <h2 className="mb-1 text-sm font-semibold text-violet-300">MODE DÉMONSTRATION</h2>
-      <p className="mb-4 text-xs text-zinc-500">
-        Contrôle des cotes — programmez le mode et le multiplicateur cible de la prochaine manche.
-      </p>
-      <form onSubmit={handleSubmit}>
-        <FieldWrapper label="Mode">
-          <div className="flex gap-4 text-sm text-zinc-300">
-            <label className="flex items-center gap-1.5">
-              <input
-                type="radio"
-                name="demo-mode"
-                checked={mode === 'AUTOMATIC'}
-                onChange={() => setMode('AUTOMATIC')}
-              />
-              Automatique
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="radio"
-                name="demo-mode"
-                checked={mode === 'MANUAL'}
-                onChange={() => setMode('MANUAL')}
-              />
-              Manuel
-            </label>
-          </div>
-        </FieldWrapper>
-
-        {mode === 'MANUAL' && (
-          <FieldWrapper label="Multiplicateur cible (ex: 2.50x)" hint="Doit être ≥ 1.00">
-            <TextInput
-              type="number"
-              min="1"
-              step="0.01"
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-              required
-            />
-          </FieldWrapper>
-        )}
-
-        <Button type="submit" variant="primary" disabled={saving} className="w-full justify-center">
-          {saving ? 'Programmation…' : 'PROGRAMMER LA MANCHE'}
-        </Button>
-      </form>
-    </section>
   );
 }
 
@@ -295,10 +225,10 @@ function OperationalSettingsPanel({
         <FieldWrapper label="Durée des paris (secondes)">
           <TextInput type="number" min="1" value={bettingDuration} onChange={(e) => setBettingDuration(e.target.value)} required />
         </FieldWrapper>
-        <FieldWrapper label="Mise minimum (FCFA virtuels)">
+        <FieldWrapper label="Mise minimum (FCFA)">
           <TextInput type="number" min="0" step="1" value={minBet} onChange={(e) => setMinBet(e.target.value)} required />
         </FieldWrapper>
-        <FieldWrapper label="Mise maximum (FCFA virtuels)">
+        <FieldWrapper label="Mise maximum (FCFA)">
           <TextInput type="number" min="0" step="1" value={maxBet} onChange={(e) => setMaxBet(e.target.value)} required />
         </FieldWrapper>
         <FieldWrapper label="Marge maison (%)">

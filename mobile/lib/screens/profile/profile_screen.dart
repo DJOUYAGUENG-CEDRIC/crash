@@ -137,7 +137,7 @@ class _ProfileCard extends ConsumerWidget {
             children: [
               const Icon(Icons.account_balance_wallet_rounded, color: AppColors.accent, size: 20),
               const SizedBox(width: AppSpacing.sm),
-              Text('Solde virtuel', style: AppTextStyles.bodyMuted),
+              Text('Solde', style: AppTextStyles.bodyMuted),
               const Spacer(),
               Text(
                 balance == null ? '…' : '${Formatters.amount(balance!)} FCFA',

@@ -72,7 +72,7 @@ export function InvitationsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-zinc-50">Invitations</h1>
-          <p className="text-sm text-zinc-500">Invitations personnelles pour rejoindre la démo CRASHX.</p>
+          <p className="text-sm text-zinc-500">Invitations personnelles pour rejoindre CRASH.</p>
         </div>
         {canCreate && (
           <Button variant="primary" onClick={() => setCreateOpen(true)}>

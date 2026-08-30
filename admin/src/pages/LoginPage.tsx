@@ -42,7 +42,7 @@ export function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-2">
           <CrashxLogo className="text-2xl" />
-          <p className="text-sm text-zinc-500">Console d'administration — Démo</p>
+          <p className="text-sm text-zinc-500">Console d'administration</p>
         </div>
 
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-xl">
@@ -63,7 +63,7 @@ export function LoginPage() {
                 autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@crashx.demo"
+                placeholder="admin@crash.app"
               />
             </FieldWrapper>
             <FieldWrapper label="Mot de passe">
@@ -93,7 +93,7 @@ export function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-zinc-600">
-          Environnement de démonstration — aucune valeur réelle, argent virtuel uniquement.
+          Accès réservé aux administrateurs.
         </p>
       </div>
     </div>

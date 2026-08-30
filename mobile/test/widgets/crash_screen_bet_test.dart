@@ -31,12 +31,12 @@ Widget _buildApp({required FakeGameService fakeGame, required GameRound? round, 
 }
 
 void main() {
-  testWidgets('MISER places a bet with the default quick amount while betting is open', (tester) async {
+  testWidgets('PLACER UN PARI places the default quick amount while betting is open', (tester) async {
     final fakeGame = FakeGameService();
     await tester.pumpWidget(_buildApp(fakeGame: fakeGame, round: sampleRound(status: RoundStatus.betting)));
     await tester.pump();
 
-    final miserButtons = find.widgetWithText(ElevatedButton, 'MISER');
+    final miserButtons = find.widgetWithText(ElevatedButton, 'PLACER UN PARI');
     expect(miserButtons, findsNWidgets(2));
 
     await tester.tap(miserButtons.first);
@@ -45,7 +45,7 @@ void main() {
 
     expect(fakeGame.placeBetCalled, isTrue);
     expect(fakeGame.lastBetSlot, 1);
-    expect(fakeGame.lastBetAmount, 100); // GameConstants.quickBetAmounts.first
+    expect(fakeGame.lastBetAmount, 200); // GameConstants.quickBetAmounts.first
   });
 
   testWidgets('tapping a quick amount chip then MISER sends the chosen amount', (tester) async {
@@ -53,16 +53,16 @@ void main() {
     await tester.pumpWidget(_buildApp(fakeGame: fakeGame, round: sampleRound(status: RoundStatus.betting)));
     await tester.pump();
 
-    await tester.tap(find.text(Formatters.amount(1000)).first);
+    await tester.tap(find.text(Formatters.amount(2000)).first);
     await tester.pump();
-    await tester.tap(find.widgetWithText(ElevatedButton, 'MISER').first);
+    await tester.tap(find.widgetWithText(ElevatedButton, 'PLACER UN PARI').first);
     await tester.pump();
     await tester.pump();
 
-    expect(fakeGame.lastBetAmount, 1000);
+    expect(fakeGame.lastBetAmount, 2000);
   });
 
-  testWidgets('MISER is disabled outside the betting phase', (tester) async {
+  testWidgets('bet button is disabled outside the betting phase', (tester) async {
     final fakeGame = FakeGameService();
     await tester.pumpWidget(
       _buildApp(
@@ -82,10 +82,10 @@ void main() {
     await tester.pumpWidget(_buildApp(fakeGame: fakeGame, round: sampleRound(status: RoundStatus.betting)));
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(ElevatedButton, 'MISER').first);
+    await tester.tap(find.widgetWithText(ElevatedButton, 'PLACER UN PARI').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Solde virtuel insuffisant.'), findsOneWidget);
+    expect(find.text('Solde insuffisant.'), findsOneWidget);
   });
 }

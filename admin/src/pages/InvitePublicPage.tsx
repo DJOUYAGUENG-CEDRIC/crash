@@ -91,7 +91,7 @@ export function InvitePublicPage() {
                     Expiration : {formatRelativeTime(info.expires_at)}
                   </p>
                   <div className="mt-5 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-                    MODE DÉMONSTRATION — argent virtuel uniquement, aucune valeur réelle.
+                    Invitation personnelle pour accéder à CRASH.
                   </div>
                   {downloadUrl ? (
                     <a
@@ -117,7 +117,7 @@ export function InvitePublicPage() {
           )}
         </div>
 
-        <p className="mt-6 text-xs text-zinc-600">CRASHX — Environnement de démonstration, argent virtuel uniquement.</p>
+        <p className="mt-6 text-xs text-zinc-600">CRASH</p>
       </div>
     </div>
   );

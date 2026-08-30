@@ -3,7 +3,7 @@
          useless offline, every read/write goes through Supabase. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="CRASHX"
+        android:label="CRASH"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

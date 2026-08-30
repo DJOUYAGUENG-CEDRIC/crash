@@ -35,7 +35,7 @@ class BonusScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             transactionsAsync.when(
               data: (transactions) {
-                final bonuses = transactions.where((t) => t.type == TransactionType.bonus).toList();
+                final bonuses = transactions.where((t) => t.type == TransactionType.bonusDemo).toList();
                 if (bonuses.isEmpty) {
                   return Text('Aucun bonus reçu pour le moment.', style: AppTextStyles.bodyMuted);
                 }
@@ -71,12 +71,12 @@ class _WelcomeBonusCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Bonus de bienvenue démo',
+                  'Bonus de bienvenue',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  "Un crédit virtuel vous a été offert à l'activation de votre compte pour découvrir CRASHX — "
+                  "Un crédit vous a été offert à l'activation de votre compte pour découvrir CRASH — "
                   'aucune valeur réelle.',
                   style: AppTextStyles.bodyMuted.copyWith(color: Colors.white70),
                 ),
@@ -112,7 +112,7 @@ class _BonusRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Bonus démo', style: AppTextStyles.body),
+                Text('Bonus', style: AppTextStyles.body),
                 Text(Formatters.dateTime(transaction.createdAt), style: AppTextStyles.caption),
               ],
             ),
