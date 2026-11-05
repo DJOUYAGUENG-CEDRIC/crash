@@ -14,6 +14,10 @@ import {
   adjustBalance,
   getUserTransactions,
   getUserBets,
+  createPlayer,
+  setPlayerPassword,
+  displayLogin,
+  isValidLogin,
 } from '../services/users';
 import type { UserWithWallet } from '../services/users';
 import type { BetRow, TransactionRow } from '../types/database';
@@ -30,9 +34,12 @@ export function UsersPage() {
   const [adjustTarget, setAdjustTarget] = useState<UserWithWallet | null>(null);
   const [blockTarget, setBlockTarget] = useState<{ user: UserWithWallet; block: boolean } | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [passwordTarget, setPasswordTarget] = useState<UserWithWallet | null>(null);
 
   const canManage = hasPermission('MANAGE_USERS');
   const canBlock = hasPermission('BLOCK_USERS');
+  const canCreate = hasPermission('CREATE_INVITATIONS');
 
   async function load() {
     setLoading(true);
@@ -81,12 +88,19 @@ export function UsersPage() {
           <h1 className="text-xl font-semibold text-zinc-50">Utilisateurs</h1>
           <p className="text-sm text-zinc-500">Comptes joueurs et soldes en FCFA.</p>
         </div>
-        <TextInput
-          placeholder="Rechercher un utilisateur…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-64"
-        />
+        <div className="flex items-center gap-2">
+          <TextInput
+            placeholder="Rechercher un utilisateur…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-64"
+          />
+          {canCreate && (
+            <Button variant="primary" onClick={() => setCreating(true)}>
+              Créer un joueur
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-zinc-800">
@@ -94,7 +108,7 @@ export function UsersPage() {
           <thead className="bg-zinc-900/60">
             <tr className="text-left text-xs font-medium uppercase tracking-wide text-zinc-500">
               <th className="px-4 py-3">Nom</th>
-              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Identifiant</th>
               <th className="px-4 py-3">Statut</th>
               <th className="px-4 py-3">Solde</th>
               <th className="px-4 py-3">Dernière activité</th>
@@ -126,7 +140,7 @@ export function UsersPage() {
                       {u.display_name ?? '—'}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">{u.email}</td>
+                  <td className="px-4 py-3 text-zinc-400">{displayLogin(u.email)}</td>
                   <td className="px-4 py-3">
                     <AccountStatusBadge status={u.status} />
                   </td>
@@ -138,6 +152,11 @@ export function UsersPage() {
                       {canManage && (
                         <Button variant="secondary" onClick={() => setAdjustTarget(u)}>
                           Ajuster le solde
+                        </Button>
+                      )}
+                      {canManage && (
+                        <Button variant="secondary" onClick={() => setPasswordTarget(u)}>
+                          Mot de passe
                         </Button>
                       )}
                       {canBlock && (
@@ -168,6 +187,20 @@ export function UsersPage() {
         />
       )}
 
+      {creating && (
+        <CreatePlayerModal
+          onClose={() => setCreating(false)}
+          onSuccess={() => {
+            setCreating(false);
+            void load();
+          }}
+        />
+      )}
+
+      {passwordTarget && (
+        <PlayerPasswordModal user={passwordTarget} onClose={() => setPasswordTarget(null)} />
+      )}
+
       {selectedUser && <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />}
 
       <ConfirmDialog
@@ -184,6 +217,115 @@ export function UsersPage() {
         onCancel={() => setBlockTarget(null)}
       />
     </div>
+  );
+}
+
+function CreatePlayerModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const { showError, showSuccess } = useToast();
+  const [displayName, setDisplayName] = useState('');
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
+  const [maxDevices, setMaxDevices] = useState('1');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!isValidLogin(login)) {
+      showError('Identifiant invalide : lettres, chiffres, . _ - (3 à 30) ou un e-mail.');
+      return;
+    }
+    if (password.length < 8) {
+      showError('Le mot de passe doit contenir au moins 8 caractères.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await createPlayer({
+        login: login.trim(),
+        password,
+        display_name: displayName.trim(),
+        max_devices: Math.max(1, Number(maxDevices) || 1),
+      });
+      showSuccess(`Joueur créé. Identifiant : ${login.trim().toLowerCase()}`);
+      onSuccess();
+    } catch (err) {
+      showError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal open onClose={onClose} title="Créer un joueur">
+      <form onSubmit={handleSubmit}>
+        <p className="mb-3 text-xs text-zinc-500">
+          Communiquez l'identifiant et le mot de passe au joueur : il se connecte directement dans
+          l'application.
+        </p>
+        <FieldWrapper label="Nom affiché">
+          <TextInput value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+        </FieldWrapper>
+        <FieldWrapper label="Identifiant" hint="ex. moussa.k, ou une adresse e-mail">
+          <TextInput value={login} onChange={(e) => setLogin(e.target.value)} autoComplete="off" required />
+        </FieldWrapper>
+        <FieldWrapper label="Mot de passe (8 caractères min.)">
+          <TextInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
+        </FieldWrapper>
+        <FieldWrapper label="Nombre max. d'appareils">
+          <TextInput type="number" min="1" value={maxDevices} onChange={(e) => setMaxDevices(e.target.value)} required />
+        </FieldWrapper>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="ghost" onClick={onClose} type="button">
+            Annuler
+          </Button>
+          <Button variant="primary" type="submit" disabled={saving}>
+            {saving ? 'Création…' : 'Créer'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function PlayerPasswordModal({ user, onClose }: { user: UserWithWallet; onClose: () => void }) {
+  const { showError, showSuccess } = useToast();
+  const [password, setPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (password.length < 8) {
+      showError('Le mot de passe doit contenir au moins 8 caractères.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await setPlayerPassword(user.id, password);
+      showSuccess('Mot de passe modifié. Communiquez-le au joueur.');
+      onClose();
+    } catch (err) {
+      showError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal open onClose={onClose} title={`Nouveau mot de passe — ${user.display_name ?? displayLogin(user.email)}`}>
+      <form onSubmit={handleSubmit}>
+        <FieldWrapper label="Mot de passe (8 caractères min.)">
+          <TextInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
+        </FieldWrapper>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="ghost" onClick={onClose} type="button">
+            Annuler
+          </Button>
+          <Button variant="primary" type="submit" disabled={saving}>
+            {saving ? 'Enregistrement…' : 'Valider'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

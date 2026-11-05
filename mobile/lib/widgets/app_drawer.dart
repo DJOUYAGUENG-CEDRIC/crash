@@ -23,23 +23,38 @@ class AppDrawer extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.lg),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.xl,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const CircleAvatar(
                     radius: 28,
                     backgroundColor: AppColors.primary,
-                    child: Icon(Icons.person, color: AppColors.textPrimary, size: 28),
+                    child: Icon(
+                      Icons.person,
+                      color: AppColors.textPrimary,
+                      size: 28,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    profileAsync.maybeWhen(data: (p) => p.displayName, orElse: () => '…'),
+                    profileAsync.maybeWhen(
+                      data: (p) => p.displayName,
+                      orElse: () => '…',
+                    ),
                     style: AppTextStyles.heading2,
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    profileAsync.maybeWhen(data: (p) => p.email, orElse: () => ''),
+                    profileAsync.maybeWhen(
+                      data: (p) => p.email,
+                      orElse: () => '',
+                    ),
                     style: AppTextStyles.bodyMuted,
                   ),
                 ],
@@ -47,7 +62,10 @@ class AppDrawer extends ConsumerWidget {
             ),
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(Icons.person_outline, color: AppColors.textPrimary),
+              leading: const Icon(
+                Icons.person_outline,
+                color: AppColors.textPrimary,
+              ),
               title: const Text('Mon profil', style: AppTextStyles.body),
               onTap: () {
                 Navigator.of(context).pop();
@@ -58,7 +76,13 @@ class AppDrawer extends ConsumerWidget {
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.logout, color: AppColors.danger),
-              title: const Text('Se déconnecter', style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
+              title: const Text(
+                'Se déconnecter',
+                style: TextStyle(
+                  color: AppColors.danger,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               onTap: () async {
                 Navigator.of(context).pop();
                 await ref.read(authServiceProvider).signOut();

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:crashx/core/constants/game_constants.dart';
 import 'package:crashx/models/enums.dart';
 import 'package:crashx/models/game_round.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,13 +9,11 @@ GameRound _round({
   required RoundStatus status,
   DateTime? runningStartedAt,
   double? crashMultiplier,
-  double? targetMultiplier,
 }) {
   return GameRound(
     id: 'round-1',
     roundNumber: 1,
     status: status,
-    targetMultiplier: targetMultiplier,
     crashMultiplier: crashMultiplier,
     bettingStartedAt: null,
     runningStartedAt: runningStartedAt,
@@ -72,28 +71,30 @@ void main() {
       expect(at15s, greaterThan(at5s));
     });
 
-    test(
-      'never exceeds the server target while waiting for the crash update',
-      () {
-        final start = DateTime.utc(2026, 1, 1, 12, 0, 0);
-        final round = _round(
-          status: RoundStatus.running,
-          runningStartedAt: start,
-          targetMultiplier: 4.20,
-        );
+    test('ignores a leaked target and caps the visible multiplier at the 15x ceiling', () {
+      final start = DateTime.utc(2026, 1, 1, 12, 0, 0);
+      final runningRound = GameRound.fromJson({
+        'id': 'protected-round',
+        'round_number': 1,
+        'status': 'RUNNING',
+        'target_multiplier': 4.20,
+        'crash_multiplier': null,
+        'betting_started_at': null,
+        'running_started_at': start.toIso8601String(),
+        'crashed_at': null,
+        'total_bets_amount': 2000,
+        'total_players': 1,
+        'created_at': start.toIso8601String(),
+      });
 
-        expect(
-          round.liveMultiplier(
-            growthRate,
-            start.add(const Duration(minutes: 2)),
-          ),
-          4.20,
-        );
-      },
-    );
+      expect(
+        runningRound.liveMultiplier(
+          growthRate,
+          start.add(const Duration(minutes: 2)),
+        ),
+        GameConstants.maxMultiplier,
+      );
 
-
-    test('caps an abnormal server multiplier at 100x', () {
       final round = GameRound.fromJson({
         'id': 'abnormal-round',
         'round_number': 2,
@@ -108,8 +109,7 @@ void main() {
         'created_at': DateTime.utc(2026, 1, 1).toIso8601String(),
       });
 
-      expect(round.targetMultiplier, 100.0);
-      expect(round.crashMultiplier, 100.0);
+      expect(round.crashMultiplier, GameConstants.maxMultiplier);
     });
 
     test('is 1.0 when the round is not running, regardless of the clock', () {

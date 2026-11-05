@@ -13,7 +13,9 @@ final walletProvider = StreamProvider<Wallet?>((ref) {
   return ref.watch(walletServiceProvider).watchWallet(userId);
 });
 
-final recentTransactionsProvider = FutureProvider<List<WalletTransaction>>((ref) async {
+final recentTransactionsProvider = FutureProvider<List<WalletTransaction>>((
+  ref,
+) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return const [];
   return ref.watch(walletServiceProvider).fetchRecentTransactions(userId);

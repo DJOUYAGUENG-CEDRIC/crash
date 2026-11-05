@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../providers/activation_providers.dart';
+import '../../providers/admin_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/service_providers.dart';
 
@@ -30,23 +31,25 @@ class SplashScreen extends ConsumerWidget {
       return const _SplashScaffold(child: _SplashLoading());
     }
 
+    // Staff accounts have no player profile/device quota: they go to the
+    // admin area instead of the player activation gate.
+    final adminAsync = ref.watch(adminAccountProvider);
+    if (adminAsync.isLoading) {
+      return const _SplashScaffold(child: _SplashLoading());
+    }
+    if (adminAsync.hasError) return _connectionError(ref);
+    if (adminAsync.value != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go('/admin');
+      });
+      return const _SplashScaffold(child: _SplashLoading());
+    }
+
     final activationAsync = ref.watch(activationProvider);
 
     return activationAsync.when(
       loading: () => const _SplashScaffold(child: _SplashLoading()),
-      error: (error, stackTrace) => _SplashScaffold(
-        child: _BlockedMessage(
-          icon: Icons.wifi_off_rounded,
-          title: 'Connexion impossible',
-          message: 'Impossible de vérifier votre accès. Vérifiez votre connexion et réessayez.',
-          actions: [
-            FilledButton(
-              onPressed: () => ref.invalidate(activationProvider),
-              child: const Text('RÉESSAYER'),
-            ),
-          ],
-        ),
-      ),
+      error: (error, stackTrace) => _connectionError(ref),
       data: (result) {
         if (result.reason == 'NOT_AUTHENTICATED') {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -62,12 +65,43 @@ class SplashScreen extends ConsumerWidget {
           return const _SplashScaffold(child: _SplashLoading());
         }
 
-        return _SplashScaffold(child: _blockedMessageFor(context, ref, result.reason, result.downloadUrl));
+        return _SplashScaffold(
+          child: _blockedMessageFor(
+            context,
+            ref,
+            result.reason,
+            result.downloadUrl,
+          ),
+        );
       },
     );
   }
 
-  Widget _blockedMessageFor(BuildContext context, WidgetRef ref, String reason, String? downloadUrl) {
+  Widget _connectionError(WidgetRef ref) {
+    return _SplashScaffold(
+      child: _BlockedMessage(
+        icon: Icons.wifi_off_rounded,
+        title: 'Connexion impossible',
+        message: 'Impossible de vérifier votre accès. Vérifiez votre connexion et réessayez.',
+        actions: [
+          FilledButton(
+            onPressed: () {
+              ref.invalidate(adminAccountProvider);
+              ref.invalidate(activationProvider);
+            },
+            child: const Text('RÉESSAYER'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _blockedMessageFor(
+    BuildContext context,
+    WidgetRef ref,
+    String reason,
+    String? downloadUrl,
+  ) {
     switch (reason) {
       case 'UPDATE_REQUIRED':
         return _BlockedMessage(
@@ -78,7 +112,10 @@ class SplashScreen extends ConsumerWidget {
             FilledButton.icon(
               onPressed: downloadUrl == null
                   ? null
-                  : () => launchUrl(Uri.parse(downloadUrl), mode: LaunchMode.externalApplication),
+                  : () => launchUrl(
+                      Uri.parse(downloadUrl),
+                      mode: LaunchMode.externalApplication,
+                    ),
               icon: const Icon(Icons.download_rounded),
               label: const Text('METTRE À JOUR'),
             ),
@@ -164,7 +201,9 @@ class _SplashLoading extends StatelessWidget {
       children: [
         Text(
           AppConstants.appName,
-          style: AppTextStyles.displayLarge.copyWith(color: AppColors.primaryVariant),
+          style: AppTextStyles.displayLarge.copyWith(
+            color: AppColors.primaryVariant,
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         const SizedBox(height: AppSpacing.xxl),
@@ -175,7 +214,12 @@ class _SplashLoading extends StatelessWidget {
 }
 
 class _BlockedMessage extends StatelessWidget {
-  const _BlockedMessage({required this.icon, required this.title, required this.message, required this.actions});
+  const _BlockedMessage({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.actions,
+  });
 
   final IconData icon;
   final String title;
@@ -191,7 +235,11 @@ class _BlockedMessage extends StatelessWidget {
         const SizedBox(height: AppSpacing.lg),
         Text(title, style: AppTextStyles.heading1, textAlign: TextAlign.center),
         const SizedBox(height: AppSpacing.sm),
-        Text(message, style: AppTextStyles.bodyMuted, textAlign: TextAlign.center),
+        Text(
+          message,
+          style: AppTextStyles.bodyMuted,
+          textAlign: TextAlign.center,
+        ),
         if (actions.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.xl),
           ...actions,

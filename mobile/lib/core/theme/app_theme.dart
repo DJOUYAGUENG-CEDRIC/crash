@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'app_colors.dart';
 import 'app_radius.dart';
 import 'app_text_styles.dart';
@@ -76,7 +77,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceElevated,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: AppRadius.mdRadius,
           borderSide: const BorderSide(color: AppColors.surfaceBorder),
@@ -98,7 +102,10 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         showUnselectedLabels: true,
       ),
-      dividerTheme: const DividerThemeData(color: AppColors.surfaceBorder, thickness: 1),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.surfaceBorder,
+        thickness: 1,
+      ),
     );
   }
 }

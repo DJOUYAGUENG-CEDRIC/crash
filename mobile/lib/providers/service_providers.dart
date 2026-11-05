@@ -8,4 +8,6 @@ import '../services/wallet_service.dart';
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 final walletServiceProvider = Provider<WalletService>((ref) => WalletService());
 final gameServiceProvider = Provider<GameService>((ref) => GameService());
-final activationServiceProvider = Provider<ActivationService>((ref) => ActivationService());
+final activationServiceProvider = Provider<ActivationService>(
+  (ref) => ActivationService(),
+);

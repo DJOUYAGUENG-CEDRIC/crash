@@ -13,12 +13,14 @@ class BetValidation {
   static const double maxAmount = 1000000;
 
   /// Clamps a raw amount into the acceptable client-side range.
-  static double clampAmount(double value) => value.clamp(minAmount, maxAmount).toDouble();
+  static double clampAmount(double value) =>
+      value.clamp(minAmount, maxAmount).toDouble();
 
   /// Whether [value] is an acceptable auto-cashout multiplier. `null`
   /// means "auto-cashout disabled", which is always valid.
   static bool isValidAutoCashout(double? value) {
     if (value == null) return true;
-    return value >= GameConstants.minAutoCashoutMultiplier;
+    return value >= GameConstants.minAutoCashoutMultiplier &&
+        value <= GameConstants.maxAutoCashoutMultiplier;
   }
 }

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../screens/auth/activation_screen.dart';
+import '../../screens/admin/admin_screen.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/bonus/bonus_screen.dart';
 import '../../screens/crash/crash_screen.dart';
 import '../../screens/history/history_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/profile/profile_screen.dart';
-import '../../screens/schedule/crash_schedule_screen.dart';
 import '../../screens/shell/main_shell.dart';
 import '../../screens/splash/splash_screen.dart';
 
@@ -18,7 +17,8 @@ import '../../screens/splash/splash_screen.dart';
 class AppRouter {
   AppRouter._();
 
-  static final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>(debugLabel: 'root');
 
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -26,27 +26,50 @@ class AppRouter {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/activate', builder: (context, state) => const ActivationScreen()),
+      GoRoute(path: '/admin', builder: (context, state) => const AdminScreen()),
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => MainShell(navigationShell: navigationShell),
+        builder: (context, state, navigationShell) =>
+            MainShell(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
-            routes: [GoRoute(path: '/home', builder: (context, state) => const HomeScreen())],
+            routes: [
+              GoRoute(
+                path: '/home',
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/crash', builder: (context, state) => const CrashScreen())],
+            routes: [
+              GoRoute(
+                path: '/crash',
+                builder: (context, state) => const CrashScreen(),
+              ),
+            ],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/history', builder: (context, state) => const HistoryScreen())],
+            routes: [
+              GoRoute(
+                path: '/history',
+                builder: (context, state) => const HistoryScreen(),
+              ),
+            ],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/schedule', builder: (context, state) => const CrashScheduleScreen())],
+            routes: [
+              GoRoute(
+                path: '/bonus',
+                builder: (context, state) => const BonusScreen(),
+              ),
+            ],
           ),
           StatefulShellBranch(
-            routes: [GoRoute(path: '/bonus', builder: (context, state) => const BonusScreen())],
-          ),
-          StatefulShellBranch(
-            routes: [GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen())],
+            routes: [
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const ProfileScreen(),
+              ),
+            ],
           ),
         ],
       ),

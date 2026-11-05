@@ -18,7 +18,6 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/users', label: 'Utilisateurs', icon: '👥', permission: 'VIEW_USERS' },
   { to: '/sub-admins', label: 'Sous-comptes', icon: '🛡️', superAdminOnly: true },
   { to: '/devices', label: 'Appareils', icon: '📱', permission: 'VIEW_USERS' },
-  { to: '/invitations', label: 'Invitations', icon: '✉️', permission: 'VIEW_USERS' },
   { to: '/statistics', label: 'Statistiques', icon: '📈', permission: 'VIEW_STATISTICS' },
   { to: '/logs', label: 'Journaux', icon: '🧾', permission: 'VIEW_LOGS' },
   { to: '/settings', label: 'Paramètres', icon: '⚙️', permission: 'VIEW_SETTINGS' },

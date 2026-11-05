@@ -6,6 +6,7 @@ import '../../core/constants/game_constants.dart';
 import '../../core/utils/bet_validation.dart';
 import '../../core/utils/error_messages.dart';
 import '../../core/utils/formatters.dart';
+import '../../models/bet.dart';
 import '../../models/enums.dart';
 import '../../models/game_round.dart';
 import '../../providers/game_providers.dart';
@@ -31,6 +32,7 @@ class _BetPanelState extends ConsumerState<BetPanel> {
   double _amount = GameConstants.quickBetAmounts.first;
   bool _autoCashoutEnabled = false;
   bool _isSubmitting = false;
+  String? _lastAutomaticRoundId;
   late final TextEditingController _amountController;
   late final TextEditingController _autoCashoutController;
 
@@ -56,7 +58,7 @@ class _BetPanelState extends ConsumerState<BetPanel> {
     });
   }
 
-  Future<void> _placeBet(String roundId) async {
+  Future<void> _placeBet(String roundId, {bool automatic = false}) async {
     double? autoCashout;
     if (_autoCashoutEnabled) {
       final parsed = double.tryParse(
@@ -65,7 +67,8 @@ class _BetPanelState extends ConsumerState<BetPanel> {
       if (parsed == null || !BetValidation.isValidAutoCashout(parsed)) {
         _showSnack(
           "Multiplicateur d'encaissement automatique invalide "
-          '(min ${GameConstants.minAutoCashoutMultiplier}x).',
+          '(${GameConstants.minAutoCashoutMultiplier}x à '
+          '${GameConstants.maxAutoCashoutMultiplier.toStringAsFixed(0)}x).',
         );
         return;
       }
@@ -84,10 +87,35 @@ class _BetPanelState extends ConsumerState<BetPanel> {
           );
       gameNoticeController.show('Votre pari est accepté !');
     } catch (error) {
+      if (automatic && mounted) {
+        setState(() => _autoCashoutEnabled = false);
+      }
       _showSnack(friendlyBetErrorMessage(error));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  void _scheduleAutomaticBet(GameRound? round, Bet? myBet) {
+    if (!_autoCashoutEnabled ||
+        round == null ||
+        (round.status != RoundStatus.waiting &&
+            round.status != RoundStatus.betting) ||
+        (round.countdown ?? 1) <= 0 ||
+        myBet != null ||
+        _isSubmitting ||
+        _lastAutomaticRoundId == round.id) {
+      return;
+    }
+
+    // Reserve this round before scheduling the request. Realtime can rebuild
+    // the panel several times during the countdown, but auto-play must submit
+    // at most one bet per slot and per round.
+    _lastAutomaticRoundId = round.id;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_autoCashoutEnabled || _isSubmitting) return;
+      _placeBet(round.id, automatic: true);
+    });
   }
 
   Future<void> _cashout(String betId) async {
@@ -116,6 +144,8 @@ class _BetPanelState extends ConsumerState<BetPanel> {
     final myBets = ref.watch(myBetsForCurrentRoundProvider).value ?? const [];
     final myBet = myBets.where((b) => b.slot == widget.slot).firstOrNull;
 
+    _scheduleAutomaticBet(round, myBet);
+
     final canBet =
         (round?.status == RoundStatus.waiting ||
             round?.status == RoundStatus.betting) &&
@@ -124,7 +154,8 @@ class _BetPanelState extends ConsumerState<BetPanel> {
     final canCashout =
         myBet != null &&
         myBet.status == BetStatus.active &&
-        round?.status == RoundStatus.running;
+        round?.status == RoundStatus.running &&
+        myBet.roundId == round?.id;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),

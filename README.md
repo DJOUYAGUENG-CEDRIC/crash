@@ -42,9 +42,9 @@ continuer (licences Android non acceptées : `flutter doctor --android-licenses`
 
 1. Créer un nouveau projet sur https://supabase.com.
 2. Dans **Authentication → Providers → Email**, désactiver **"Allow new
-   users to sign up"**. C'est obligatoire : la création de compte ne doit
-   se faire que via l'Edge Function `activate-invitation` (invitation
-   obligatoire), jamais via l'inscription publique standard.
+   users to sign up"**. C'est obligatoire : les comptes joueurs sont créés
+   uniquement par un administrateur, via l'Edge Function `create-player`,
+   jamais via l'inscription publique standard.
 3. Appliquer les migrations dans l'ordre, depuis le **SQL Editor** du
    dashboard Supabase (copier-coller chaque fichier) ou via la CLI :
 
@@ -54,15 +54,14 @@ continuer (licences Android non acceptées : `flutter doctor --android-licenses`
    npx supabase db push
    ```
 
-   Fichiers, dans l'ordre : `supabase/migrations/0001_initial_schema.sql`
-   → `0002_functions_and_triggers.sql` → `0003_rls_policies.sql` →
-   `0004_game_engine_functions.sql` → `0005_admin_functions.sql`.
+   Fichiers, dans l'ordre numérique : `supabase/migrations/0001_initial_schema.sql`
+   → … → `0025_demo_round_predictions.sql` (toujours appliquer toutes
+   les migrations, chacune remplace les fonctions des précédentes).
 
 4. Déployer les Edge Functions :
 
    ```bash
-   npx supabase functions deploy get-invitation --no-verify-jwt
-   npx supabase functions deploy activate-invitation --no-verify-jwt
+   npx supabase functions deploy create-player
    npx supabase functions deploy create-sub-admin
    npx supabase functions deploy game-tick
    ```
@@ -88,6 +87,30 @@ volontaire (spec §9). La procédure est manuelle et unique :
 3. Vérifier : `select * from admin_users;` doit montrer les deux lignes
    `role = 'SUPER_ADMIN'`.
 
+## 3 bis. Manche partagée (cotes centralisées)
+
+Depuis `0020_centralized_shared_rounds.sql`, tous les appareils suivent
+**la même manche** générée par le serveur :
+
+- le point de crash est tiré côté serveur (`generate_crash_multiplier`,
+  plafond 15x) et publié à l'avance par le site `/predictor` pour cette
+  démonstration uniquement ;
+- les encaissements (manuels et automatiques) sont réglés sur le
+  multiplicateur de la manche ; toute mise encore active au crash est
+  perdue — il n'y a plus de « vol personnel » par joueur ;
+- l'application aligne son horloge sur celle du serveur (`server_now()`)
+  pour que l'animation soit identique sur tous les téléphones ;
+- le tableau des mises n'affiche que les mises réelles du serveur. Des
+  joueurs de démonstration locaux ne s'affichent qu'avec
+  `--dart-define=ENABLE_TEST_DATA=true` (développement d'interface).
+
+Le site public React `/predictor` affiche la cote programmée exacte de la
+manche et l'historique. La migration `0025_demo_round_predictions.sql`
+rend ces cotes accessibles publiquement : **ne jamais appliquer cette
+migration ni déployer ce site sur un environnement de jeu réel**. Le jeu
+reste une démonstration à argent virtuel. Un arrêt forcé par un admin peut
+faire crasher une manche avant sa cote programmée.
+
 ## 4. Création des sous-comptes et configuration des permissions
 
 Une fois connecté au dashboard admin (`admin/`) avec un des deux comptes
@@ -105,6 +128,16 @@ Une fois connecté au dashboard admin (`admin/`) avec un des deux comptes
    compte" — un sous-compte ne peut jamais créer ou modifier un autre
    compte administratif, ceci est appliqué par les RLS Postgres, pas
    seulement par l'interface.
+
+### Administration depuis l'application mobile
+
+Un compte présent et actif dans `admin_users` qui se connecte sur l'APK
+est redirigé vers l'espace **Administration** (`/admin`) au lieu du jeu.
+Les joueurs n'y ont jamais accès. Chaque rubrique (tableau de bord, jeu,
+utilisateurs (création des joueurs), appareils, sous-comptes, statistiques,
+journaux, paramètres) n'apparaît qu'avec la permission correspondante,
+et le serveur re-vérifie la permission à chaque appel. Les comptes admin
+ne passent pas par le contrôle d'appareil des joueurs (`check_activation`).
 
 ## 5. Variables d'environnement
 
@@ -197,14 +230,16 @@ APK généré dans `mobile/build/app/outputs/flutter-apk/app-release.apk`.
 L'APK seul n'autorise jamais l'accès (spec §33). Chaque utilisateur a
 besoin de : `APK + Compte + Autorisation + Appareil autorisé`. Flux :
 
-1. Un admin avec la permission `CREATE_INVITATIONS` crée une invitation
-   depuis le dashboard → génère un lien `https://crashx.app/invite/<token>`.
-2. Ce lien ouvre la page publique (`admin/src/pages/InvitePublic.tsx`,
-   route `/invite/:token`, sans authentification) qui affiche le nom
-   invité, l'expiration, et un bouton "TÉLÉCHARGER L'APK".
-3. Au premier lancement, l'utilisateur active son compte dans l'app
-   avec le token d'invitation (Edge Function `activate-invitation`),
-   ce qui crée son compte ET consomme l'invitation.
+1. Un admin avec la permission `CREATE_INVITATIONS` (libellé « Créer des
+   comptes joueurs ») crée le joueur depuis **Utilisateurs → Créer un
+   joueur** (dashboard web ou espace admin de l'APK) : nom, identifiant,
+   mot de passe, nombre maximal d'appareils. Edge Function `create-player`.
+2. L'identifiant est soit une adresse e-mail, soit un identifiant simple
+   (`moussa.k`, 3 à 30 caractères `a-z 0-9 . _ -`), enregistré en interne
+   comme `moussa.k@joueurs.crashx.app`.
+3. L'admin transmet l'identifiant et le mot de passe au joueur, qui se
+   connecte directement dans l'application. En cas d'oubli, l'admin
+   (permission `MANAGE_USERS`) définit un nouveau mot de passe.
 4. À chaque lancement/reprise, l'app appelle `check_activation()` côté
    serveur : compte actif ? appareil autorisé ? version à jour ? Un
    APK copié et partagé ne suffit donc jamais à lui seul.

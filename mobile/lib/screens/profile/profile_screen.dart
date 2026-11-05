@@ -20,10 +20,15 @@ import '../../services/supabase_service.dart';
 /// Kept as a screen-local provider rather than growing ActivationService,
 /// since this is a read-only display concern, not device-registration
 /// logic.
-final _myDevicesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final _myDevicesProvider = FutureProvider<List<Map<String, dynamic>>>((
+  ref,
+) async {
   final userId = ref.watch(currentUserIdProvider);
   if (userId == null) return const [];
-  final rows = await SupabaseService.client.from('authorized_devices').select().eq('user_id', userId);
+  final rows = await SupabaseService.client
+      .from('authorized_devices')
+      .select()
+      .eq('user_id', userId);
   return (rows as List).cast<Map<String, dynamic>>();
 });
 
@@ -59,7 +64,10 @@ class ProfileScreen extends ConsumerWidget {
                 balance: walletAsync.value?.balance,
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => Text('Impossible de charger le profil.', style: AppTextStyles.bodyMuted),
+              error: (error, stackTrace) => Text(
+                'Impossible de charger le profil.',
+                style: AppTextStyles.bodyMuted,
+              ),
             ),
             const SizedBox(height: AppSpacing.xl),
             Text('Statistiques', style: AppTextStyles.heading2),
@@ -67,7 +75,10 @@ class ProfileScreen extends ConsumerWidget {
             betsAsync.when(
               data: (bets) => _StatsGrid(bets: bets),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => Text('Impossible de charger les statistiques.', style: AppTextStyles.bodyMuted),
+              error: (error, stackTrace) => Text(
+                'Impossible de charger les statistiques.',
+                style: AppTextStyles.bodyMuted,
+              ),
             ),
             const SizedBox(height: AppSpacing.xl),
             Text('Appareil associé', style: AppTextStyles.heading2),
@@ -75,12 +86,20 @@ class ProfileScreen extends ConsumerWidget {
             devicesAsync.when(
               data: (devices) {
                 if (devices.isEmpty) {
-                  return Text('Aucun appareil enregistré.', style: AppTextStyles.bodyMuted);
+                  return Text(
+                    'Aucun appareil enregistré.',
+                    style: AppTextStyles.bodyMuted,
+                  );
                 }
-                return Column(children: [for (final d in devices) _DeviceRow(device: d)]);
+                return Column(
+                  children: [for (final d in devices) _DeviceRow(device: d)],
+                );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => Text('Impossible de charger vos appareils.', style: AppTextStyles.bodyMuted),
+              error: (error, stackTrace) => Text(
+                'Impossible de charger vos appareils.',
+                style: AppTextStyles.bodyMuted,
+              ),
             ),
           ],
         ),
@@ -90,7 +109,11 @@ class ProfileScreen extends ConsumerWidget {
 }
 
 class _ProfileCard extends ConsumerWidget {
-  const _ProfileCard({required this.displayName, required this.email, required this.balance});
+  const _ProfileCard({
+    required this.displayName,
+    required this.email,
+    required this.balance,
+  });
 
   final String displayName;
   final String email;
@@ -126,7 +149,10 @@ class _ProfileCard extends ConsumerWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.edit_outlined, color: AppColors.textSecondary),
+                icon: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.textSecondary,
+                ),
                 tooltip: "Modifier le nom d'affichage",
                 onPressed: () => _showEditNameDialog(context, ref, displayName),
               ),
@@ -135,7 +161,11 @@ class _ProfileCard extends ConsumerWidget {
           const Divider(height: AppSpacing.xl),
           Row(
             children: [
-              const Icon(Icons.account_balance_wallet_rounded, color: AppColors.accent, size: 20),
+              const Icon(
+                Icons.account_balance_wallet_rounded,
+                color: AppColors.accent,
+                size: 20,
+              ),
               const SizedBox(width: AppSpacing.sm),
               Text('Solde', style: AppTextStyles.bodyMuted),
               const Spacer(),
@@ -150,16 +180,27 @@ class _ProfileCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _showEditNameDialog(BuildContext context, WidgetRef ref, String currentName) async {
+  Future<void> _showEditNameDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String currentName,
+  ) async {
     final controller = TextEditingController(text: currentName);
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surfaceElevated,
         title: const Text("Modifier le nom d'affichage"),
-        content: TextField(controller: controller, autofocus: true, style: AppTextStyles.body),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: AppTextStyles.body,
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('ANNULER')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('ANNULER'),
+          ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(controller.text.trim()),
             child: const Text('ENREGISTRER'),
@@ -173,9 +214,11 @@ class _ProfileCard extends ConsumerWidget {
       ref.invalidate(profileProvider);
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Impossible de modifier le nom pour le moment.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de modifier le nom pour le moment.'),
+          ),
+        );
       }
     }
   }
@@ -207,8 +250,15 @@ class _StatsGrid extends StatelessWidget {
         _StatTile(label: 'Parties jouées', value: '$played'),
         _StatTile(label: 'Victoires', value: '$wins', color: AppColors.success),
         _StatTile(label: 'Pertes', value: '$losses', color: AppColors.danger),
-        _StatTile(label: 'Total misé', value: '${Formatters.amount(totalStaked)} FCFA'),
-        _StatTile(label: 'Total gagné', value: '${Formatters.amount(totalWon)} FCFA', color: AppColors.success),
+        _StatTile(
+          label: 'Total misé',
+          value: '${Formatters.amount(totalStaked)} FCFA',
+        ),
+        _StatTile(
+          label: 'Total gagné',
+          value: '${Formatters.amount(totalWon)} FCFA',
+          color: AppColors.success,
+        ),
       ],
     );
   }
@@ -258,8 +308,11 @@ class _DeviceRow extends StatelessWidget {
     final platform = (device['platform'] as String?) ?? '';
     // Matches authorized_devices in supabase/migrations/0001_initial_schema.sql
     // (last_seen, not last_seen_at — that table has no updated_at column).
-    final lastSeenRaw = (device['last_seen'] ?? device['created_at']) as String?;
-    final lastSeen = lastSeenRaw == null ? null : DateTime.tryParse(lastSeenRaw);
+    final lastSeenRaw =
+        (device['last_seen'] ?? device['created_at']) as String?;
+    final lastSeen = lastSeenRaw == null
+        ? null
+        : DateTime.tryParse(lastSeenRaw);
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.xs),
@@ -279,8 +332,11 @@ class _DeviceRow extends StatelessWidget {
               children: [
                 Text(name, style: AppTextStyles.body),
                 Text(
-                  [if (platform.isNotEmpty) platform, if (lastSeen != null) 'vu le ${Formatters.dateTime(lastSeen)}']
-                      .join(' · '),
+                  [
+                    if (platform.isNotEmpty) platform,
+                    if (lastSeen != null)
+                      'vu le ${Formatters.dateTime(lastSeen)}',
+                  ].join(' · '),
                   style: AppTextStyles.caption,
                 ),
               ],

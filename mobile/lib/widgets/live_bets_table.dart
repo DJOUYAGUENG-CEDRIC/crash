@@ -9,6 +9,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
 import '../core/theme/app_text_styles.dart';
 import '../core/utils/formatters.dart';
+import '../core/utils/server_clock.dart';
 import '../models/enums.dart';
 import '../models/live_bet.dart';
 import '../models/game_round.dart';
@@ -54,6 +55,9 @@ class _LiveBetsTableState extends ConsumerState<LiveBetsTable> {
     final liveBets = _testDataEnabled && round != null
         ? [...serverBets, ..._buildTestBets(round)]
         : serverBets;
+    final roundFinished =
+        round?.status == RoundStatus.crashed ||
+        round?.status == RoundStatus.result;
 
     final visibleAmount = liveBets.fold<double>(0, (sum, b) => sum + b.amount);
     final visiblePayout = liveBets
@@ -189,7 +193,8 @@ class _LiveBetsTableState extends ConsumerState<LiveBetsTable> {
                       ],
                     ),
                   ),
-                  for (final bet in liveBets.take(30)) _LiveBetRow(bet: bet),
+                  for (final bet in liveBets.take(11))
+                    _LiveBetRow(bet: bet, roundFinished: roundFinished),
                 ],
               ),
             ),
@@ -198,23 +203,26 @@ class _LiveBetsTableState extends ConsumerState<LiveBetsTable> {
     );
   }
 
-  static const bool _testDataEnabled = bool.fromEnvironment(
-    'ENABLE_TEST_DATA',
-    defaultValue: false,
-  );
+  /// Locally generated demo players. Off by default: the table must show
+  /// the same server-side bets on every device. Enable only for UI work
+  /// with --dart-define=ENABLE_TEST_DATA=true.
+  static const bool _testDataEnabled = bool.fromEnvironment('ENABLE_TEST_DATA');
 
   List<LiveBet> _buildTestBets(GameRound round) {
     final random = math.Random(round.roundNumber);
-    final now = DateTime.now();
-    const amounts = [
-      200.0,
-      400.0,
-      700.0,
-      1100.0,
-      2000.0,
-      5000.0,
-      20000.0,
-      70000.0,
+    final now = ServerClock.now();
+    const referencePlayers = [
+      (suffix: '91', amount: 2000.0),
+      (suffix: '97', amount: 400.0),
+      (suffix: '72', amount: 1100.0),
+      (suffix: '71', amount: 700.0),
+      (suffix: '88', amount: 700.0),
+      (suffix: '77', amount: 70000.0),
+      (suffix: '18', amount: 70000.0),
+      (suffix: '92', amount: 70000.0),
+      (suffix: '33', amount: 20000.0),
+      (suffix: '10', amount: 700.0),
+      (suffix: '54', amount: 700.0),
     ];
     final finished =
         round.status == RoundStatus.crashed ||
@@ -222,8 +230,9 @@ class _LiveBetsTableState extends ConsumerState<LiveBetsTable> {
     final crashAt = round.crashMultiplier ?? 1.0;
     final liveMultiplier = round.liveMultiplier(GameConstants.growthRate, now);
 
-    return List.generate(14, (index) {
-      final amount = amounts[random.nextInt(amounts.length)];
+    return List.generate(referencePlayers.length, (index) {
+      final player = referencePlayers[index];
+      final amount = player.amount;
       final desiredCashout = 1.05 + random.nextDouble() * 1.65;
       final hasCashedDuringFlight =
           round.status == RoundStatus.running &&
@@ -242,12 +251,10 @@ class _LiveBetsTableState extends ConsumerState<LiveBetsTable> {
           : round.status == RoundStatus.running
           ? BetStatus.active
           : BetStatus.pending;
-      final suffix = (10 + random.nextInt(90)).toString();
-
       return LiveBet(
         id: 'test-${round.id}-$index',
         roundId: round.id,
-        displayName: 'joueur$suffix',
+        displayName: 'joueur${player.suffix}',
         slot: index.isEven ? 1 : 2,
         amount: amount,
         status: status,
@@ -267,7 +274,7 @@ class _LiveBetsTableState extends ConsumerState<LiveBetsTable> {
         round.status == RoundStatus.result;
     final elapsed = round.runningStartedAt == null
         ? 0.0
-        : DateTime.now().difference(round.runningStartedAt!).inMilliseconds /
+        : ServerClock.now().difference(round.runningStartedAt!).inMilliseconds /
               1000.0;
     final payoutProgress = finished
         ? 1.0
@@ -360,14 +367,27 @@ class _StatColumn extends StatelessWidget {
 }
 
 class _LiveBetRow extends StatelessWidget {
-  const _LiveBetRow({required this.bet});
+  const _LiveBetRow({required this.bet, required this.roundFinished});
 
   final LiveBet bet;
+  final bool roundFinished;
 
   @override
   Widget build(BuildContext context) {
     final isCashedOut = bet.status == BetStatus.cashedOut;
-    final isLost = bet.status == BetStatus.lost;
+    // A stale or prematurely received LOST status must never reveal a loss
+    // while the public round is still flying.
+    final isLost = roundFinished && bet.status == BetStatus.lost;
+    final rowColor = !roundFinished || isCashedOut
+        ? AppColors.success
+        : isLost
+        ? AppColors.danger
+        : AppColors.textSecondary;
+    final rowBackground = !roundFinished || isCashedOut
+        ? const Color(0x142ECC71)
+        : isLost
+        ? const Color(0x14FF4D4D)
+        : Colors.transparent;
     final coteText = isCashedOut
         ? 'x${(bet.cashoutMultiplier ?? 0).toStringAsFixed(2)}'
         : isLost
@@ -378,21 +398,22 @@ class _LiveBetRow extends StatelessWidget {
         : isLost
         ? '0 XAF'
         : '—';
-    final color = switch (bet.status) {
-      BetStatus.cashedOut => AppColors.success,
-      BetStatus.lost => AppColors.danger,
-      _ => AppColors.textSecondary,
-    };
     final rowStyle = AppTextStyles.body.copyWith(
       fontSize: 12.5,
       fontWeight: FontWeight.w400,
       height: 1.18,
       letterSpacing: 0,
-      color: color,
+      color: rowColor,
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3.5),
+    return Container(
+      key: Key('live-bet-row-${bet.id}'),
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3.5),
+      decoration: BoxDecoration(
+        color: rowBackground,
+        borderRadius: BorderRadius.circular(4),
+      ),
       child: Row(
         children: [
           Expanded(
@@ -423,13 +444,7 @@ class _LiveBetRow extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(
-                  gainText,
-                  maxLines: 1,
-                  style: rowStyle.copyWith(
-                    color: isCashedOut ? AppColors.success : color,
-                  ),
-                ),
+                child: Text(gainText, maxLines: 1, style: rowStyle),
               ),
             ),
           ),

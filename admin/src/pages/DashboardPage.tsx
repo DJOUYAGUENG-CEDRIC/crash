@@ -13,7 +13,6 @@ import { useToast, errorMessage } from '../context/ToastContext';
 const QUICK_LINKS = [
   { to: '/game', label: 'Contrôler le jeu', icon: '🚀', permission: 'VIEW_GAME' as const },
   { to: '/users', label: 'Gérer les utilisateurs', icon: '👥', permission: 'VIEW_USERS' as const },
-  { to: '/invitations', label: 'Invitations', icon: '✉️', permission: 'VIEW_USERS' as const },
   { to: '/statistics', label: 'Statistiques', icon: '📈', permission: 'VIEW_STATISTICS' as const },
 ];
 
@@ -81,8 +80,8 @@ export function DashboardPage() {
               accent="blue"
             />
             <StatCard
-              label="Invitations en attente"
-              value={overview?.pendingInvitations ?? 0}
+              label="Joueurs inscrits"
+              value={overview?.registeredPlayers ?? 0}
               icon="✉️"
               accent="amber"
             />

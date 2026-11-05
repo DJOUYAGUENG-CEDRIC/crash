@@ -27,33 +27,11 @@ String friendlyBetErrorMessage(Object error) {
   }
 }
 
-/// Maps activate-invitation failures (see auth_service.dart) to friendly
-/// French copy for the activation screen.
-String friendlyActivationErrorMessage(Object error) {
-  final code = error is AuthException ? error.message : error.toString();
-  switch (code) {
-    case 'INVITATION_NOT_FOUND':
-      return "Ce code d'invitation est introuvable.";
-    case 'INVITATION_EXPIRED':
-      return "Ce code d'invitation a expiré.";
-    case 'INVITATION_ALREADY_USED_OR_REVOKED':
-      return "Ce code d'invitation a déjà été utilisé ou révoqué.";
-    case 'INVALID_INPUT':
-      return 'Informations invalides. Vérifiez les champs saisis.';
-    case 'ACCOUNT_CREATION_FAILED':
-      return "Impossible de créer le compte. L'adresse e-mail est peut-être déjà utilisée.";
-    case 'ACCOUNT_CREATED_SIGN_IN_FAILED':
-      return 'Le compte a été créé. Revenez à la connexion et utilisez le même e-mail et mot de passe.';
-    default:
-      return "L'activation a échoué. Réessayez.";
-  }
-}
-
 /// Friendly copy for sign-in failures — Supabase returns fairly generic
 /// AuthExceptions for bad credentials, so we keep this deliberately short.
 String friendlyLoginErrorMessage(Object error) {
   if (error is AuthException) {
-    return 'Adresse e-mail ou mot de passe incorrect.';
+    return 'Identifiant ou mot de passe incorrect.';
   }
   return 'Connexion impossible. Vérifiez votre connexion internet.';
 }

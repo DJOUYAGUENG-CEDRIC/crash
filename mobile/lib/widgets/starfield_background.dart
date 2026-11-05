@@ -31,14 +31,18 @@ class _StarfieldPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final random = math.Random(42); // fixed seed: stable, no per-frame recompute
+    final random = math.Random(
+      42,
+    ); // fixed seed: stable, no per-frame recompute
     final paint = Paint()..color = Colors.white;
 
     for (var i = 0; i < _starCount; i++) {
       final dx = random.nextDouble() * size.width;
       final dy = random.nextDouble() * size.height;
       final radius = random.nextDouble() * 1.4 + 0.3;
-      paint.color = Colors.white.withValues(alpha: random.nextDouble() * 0.5 + 0.25);
+      paint.color = Colors.white.withValues(
+        alpha: random.nextDouble() * 0.5 + 0.25,
+      );
       canvas.drawCircle(Offset(dx, dy), radius, paint);
     }
   }

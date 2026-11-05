@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/env/env.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/utils/server_clock.dart';
 import 'providers/activation_providers.dart';
+import 'providers/admin_providers.dart';
 import 'services/supabase_service.dart';
 
 Future<void> main() async {
@@ -26,7 +28,8 @@ class CrashApp extends ConsumerStatefulWidget {
   ConsumerState<CrashApp> createState() => _CrashAppState();
 }
 
-class _CrashAppState extends ConsumerState<CrashApp> with WidgetsBindingObserver {
+class _CrashAppState extends ConsumerState<CrashApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -46,6 +49,8 @@ class _CrashAppState extends ConsumerState<CrashApp> with WidgetsBindingObserver
     // as soon as it comes back to the foreground.
     if (state == AppLifecycleState.resumed) {
       ref.invalidate(activationProvider);
+      ref.invalidate(adminAccountProvider);
+      ServerClock.sync(SupabaseService.client);
     }
   }
 

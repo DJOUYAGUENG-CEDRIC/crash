@@ -15,11 +15,12 @@ class ActivationResult {
     required this.downloadUrl,
   });
 
-  factory ActivationResult.fromJson(Map<String, dynamic> json) => ActivationResult(
-    allowed: json['allowed'] as bool,
-    reason: json['reason'] as String,
-    currentVersion: json['current_version'] as String?,
-    minimumSupportedVersion: json['minimum_supported_version'] as String?,
-    downloadUrl: json['download_url'] as String?,
-  );
+  factory ActivationResult.fromJson(Map<String, dynamic> json) =>
+      ActivationResult(
+        allowed: json['allowed'] as bool,
+        reason: json['reason'] as String,
+        currentVersion: json['current_version'] as String?,
+        minimumSupportedVersion: json['minimum_supported_version'] as String?,
+        downloadUrl: json['download_url'] as String?,
+      );
 }

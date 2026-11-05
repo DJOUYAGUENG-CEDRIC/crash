@@ -8,7 +8,11 @@ class WalletService {
   SupabaseClient get _client => SupabaseService.client;
 
   Future<Wallet> fetchWallet(String userId) async {
-    final row = await _client.from('wallets').select().eq('user_id', userId).single();
+    final row = await _client
+        .from('wallets')
+        .select()
+        .eq('user_id', userId)
+        .single();
     return Wallet.fromJson(row);
   }
 
@@ -22,13 +26,18 @@ class WalletService {
         .map((rows) => Wallet.fromJson(rows.first));
   }
 
-  Future<List<WalletTransaction>> fetchRecentTransactions(String userId, {int limit = 50}) async {
+  Future<List<WalletTransaction>> fetchRecentTransactions(
+    String userId, {
+    int limit = 50,
+  }) async {
     final rows = await _client
         .from('transactions')
         .select()
         .eq('user_id', userId)
         .order('created_at', ascending: false)
         .limit(limit);
-    return (rows as List).map((r) => WalletTransaction.fromJson(r as Map<String, dynamic>)).toList();
+    return (rows as List)
+        .map((r) => WalletTransaction.fromJson(r as Map<String, dynamic>))
+        .toList();
   }
 }

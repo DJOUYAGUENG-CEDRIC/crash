@@ -4,7 +4,7 @@ export interface DashboardOverview {
   activePlayersToday: number;
   totalWageredToday: number;
   totalPaidOutToday: number;
-  pendingInvitations: number;
+  registeredPlayers: number;
   activeDevices: number;
 }
 
@@ -20,7 +20,7 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
   const [betsToday, cashoutsToday, invitations, devices] = await Promise.all([
     supabase.from('bets').select('user_id, amount').gte('placed_at', todayStart),
     supabase.from('transactions').select('amount').eq('type', 'CASHOUT').gte('created_at', todayStart),
-    supabase.from('invitations').select('id', { count: 'exact', head: true }).eq('status', 'PENDING'),
+    supabase.from('profiles').select('id', { count: 'exact', head: true }),
     supabase.from('authorized_devices').select('id', { count: 'exact', head: true }).eq('status', 'ACTIVE'),
   ]);
 
@@ -37,7 +37,7 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
     activePlayersToday: uniquePlayers.size,
     totalWageredToday: totalWagered,
     totalPaidOutToday: totalPaidOut,
-    pendingInvitations: invitations.count ?? 0,
+    registeredPlayers: invitations.count ?? 0,
     activeDevices: devices.count ?? 0,
   };
 }

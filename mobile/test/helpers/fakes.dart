@@ -13,15 +13,14 @@ import 'package:crashx/services/game_service.dart';
 /// `Supabase.instance` and throw if Supabase was never initialized) is
 /// never reached.
 class FakeAuthService extends AuthService {
-  FakeAuthService({this.signInError, this.activateError, Profile? profile}) : _profile = profile ?? sampleProfile();
+  FakeAuthService({this.signInError, Profile? profile})
+    : _profile = profile ?? sampleProfile();
 
   final Profile _profile;
   Object? signInError;
-  Object? activateError;
 
   bool signInCalled = false;
   bool signOutCalled = false;
-  bool activateCalled = false;
   String? lastSignInEmail;
   String? updatedDisplayName;
 
@@ -38,17 +37,6 @@ class FakeAuthService extends AuthService {
   }
 
   @override
-  Future<void> activateInvitation({
-    required String token,
-    required String email,
-    required String password,
-    required String displayName,
-  }) async {
-    activateCalled = true;
-    if (activateError != null) throw activateError!;
-  }
-
-  @override
   Future<Profile> fetchProfile() async => _profile;
 
   @override
@@ -58,7 +46,12 @@ class FakeAuthService extends AuthService {
 }
 
 class FakeGameService extends GameService {
-  FakeGameService({this.placeBetError, this.cashoutError, this._placeBetResult, this._cashoutResult});
+  FakeGameService({
+    this.placeBetError,
+    this.cashoutError,
+    this._placeBetResult,
+    this._cashoutResult,
+  });
 
   final Bet? _placeBetResult;
   final Bet? _cashoutResult;
@@ -84,7 +77,8 @@ class FakeGameService extends GameService {
     lastBetAmount = amount;
     lastAutoCashout = autoCashoutMultiplier;
     if (placeBetError != null) throw placeBetError!;
-    return _placeBetResult ?? sampleBet(slot: slot, amount: amount, status: BetStatus.pending);
+    return _placeBetResult ??
+        sampleBet(slot: slot, amount: amount, status: BetStatus.pending);
   }
 
   @override
@@ -145,6 +139,8 @@ Bet sampleBet({
   BetStatus status = BetStatus.active,
   double? cashoutMultiplier,
   double? payout,
+  DateTime? flightStartedAt,
+  DateTime? cashedOutAt,
 }) {
   return Bet(
     id: id,
@@ -157,6 +153,13 @@ Bet sampleBet({
     cashoutMultiplier: cashoutMultiplier,
     payout: payout,
     placedAt: DateTime.utc(2026, 1, 1),
-    cashedOutAt: null,
+    flightStartedAt:
+        flightStartedAt ??
+        (status == BetStatus.active || status == BetStatus.cashedOut
+            ? (cashedOutAt ?? DateTime.now()).subtract(
+                const Duration(seconds: 10),
+              )
+            : null),
+    cashedOutAt: cashedOutAt,
   );
 }

@@ -37,11 +37,6 @@ class MainShell extends ConsumerWidget {
       label: 'Historique',
     ),
     NavigationDestination(
-      icon: Icon(Icons.visibility_outlined),
-      selectedIcon: Icon(Icons.visibility),
-      label: 'Prévu',
-    ),
-    NavigationDestination(
       icon: Icon(Icons.card_giftcard_outlined),
       selectedIcon: Icon(Icons.card_giftcard),
       label: 'Bonus',
@@ -55,7 +50,6 @@ class MainShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isPredictionPage = navigationShell.currentIndex == 3;
     final isCrashPage = navigationShell.currentIndex == 1;
     ref.listen(isSignedInProvider, (previous, isSignedIn) {
       if (isSignedIn == false) context.go('/login');
@@ -67,19 +61,10 @@ class MainShell extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppHeader(
-        showBalance: !isPredictionPage,
-        showBackButton: isPredictionPage || isCrashPage,
-        onBack: isPredictionPage || isCrashPage
+        showBackButton: isCrashPage,
+        onBack: isCrashPage
             ? () {
-                if (isCrashPage) {
-                  navigationShell.goBranch(0);
-                  return;
-                }
-                if (context.canPop()) {
-                  context.pop();
-                } else {
-                  navigationShell.goBranch(0);
-                }
+                navigationShell.goBranch(0);
               }
             : null,
       ),
@@ -139,15 +124,11 @@ class MainShell extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                       onTap: () {
                         Navigator.of(sheetContext).pop();
-                        if (index == 3) {
-                          context.push('/schedule');
-                        } else {
-                          navigationShell.goBranch(
-                            index,
-                            initialLocation:
-                                index == navigationShell.currentIndex,
-                          );
-                        }
+                        navigationShell.goBranch(
+                          index,
+                          initialLocation:
+                              index == navigationShell.currentIndex,
+                        );
                       },
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,

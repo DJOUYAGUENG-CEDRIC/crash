@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/utils/server_clock.dart';
 import '../models/bet.dart';
 import '../models/game_round.dart';
 import '../models/live_bet.dart';
@@ -14,12 +17,58 @@ class GameService {
   /// hides target_multiplier always and crash_multiplier until the
   /// round has actually crashed (see 0003_rls_policies.sql).
   Stream<GameRound?> watchCurrentRound() {
-    return _client
+    final controller = StreamController<GameRound?>();
+    GameRound? latest;
+    var polling = false;
+
+    void publish(List<Map<String, dynamic>> rows, {bool force = true}) {
+      final next = rows.isEmpty ? null : GameRound.fromJson(rows.first);
+      final changed =
+          latest?.id != next?.id ||
+          latest?.status != next?.status ||
+          latest?.countdown != next?.countdown ||
+          latest?.crashMultiplier != next?.crashMultiplier;
+      latest = next;
+      if (!controller.isClosed && (force || changed)) controller.add(next);
+    }
+
+    // Every device animates from the server's running_started_at, so align
+    // this device's clock on the server before the first round arrives.
+    unawaited(ServerClock.sync(_client));
+
+    final realtimeSubscription = _client
         .from('game_rounds_public')
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
         .limit(1)
-        .map((rows) => rows.isEmpty ? null : GameRound.fromJson(rows.first));
+        .listen(publish, onError: controller.addError);
+
+    // Realtime normally delivers every transition immediately. Polling is a
+    // lightweight fallback for phones that briefly lose any event, including
+    // the transition from countdown to flight or from flight to crash.
+    final watchdog = Timer.periodic(const Duration(seconds: 5), (_) async {
+      if (polling) return;
+      polling = true;
+      try {
+        final rows = await _client
+            .from('game_rounds_public')
+            .select()
+            .order('created_at', ascending: false)
+            .limit(1);
+        publish((rows as List).cast<Map<String, dynamic>>(), force: false);
+      } catch (error, stackTrace) {
+        if (!controller.isClosed) controller.addError(error, stackTrace);
+      } finally {
+        polling = false;
+      }
+    });
+
+    controller.onCancel = () async {
+      watchdog.cancel();
+      await realtimeSubscription.cancel();
+      await controller.close();
+    };
+    return controller.stream;
   }
 
   Future<List<GameRound>> fetchRecentRounds({int limit = 20}) async {
@@ -28,9 +77,12 @@ class GameService {
         .select()
         .order('created_at', ascending: false)
         .limit(limit);
-    return (rows as List).map((r) => GameRound.fromJson(r as Map<String, dynamic>)).toList();
+    return (rows as List)
+        .map((r) => GameRound.fromJson(r as Map<String, dynamic>))
+        .toList();
   }
 
+  /// The signed-in player's bets on the shared current round only.
   Stream<List<Bet>> watchMyBetsForRound(String roundId, String userId) {
     return _client
         .from('bets')
@@ -38,8 +90,8 @@ class GameService {
         .eq('round_id', roundId)
         .map(
           (rows) => rows
-              .where((r) => r['user_id'] == userId)
-              .map((r) => Bet.fromJson(r))
+              .map(Bet.fromJson)
+              .where((bet) => bet.userId == userId)
               .toList(),
         );
   }
@@ -76,6 +128,7 @@ class GameService {
         .stream(primaryKey: ['id'])
         .eq('round_id', roundId)
         .order('placed_at', ascending: false)
+        .limit(100)
         .map((rows) => rows.map((r) => LiveBet.fromJson(r)).toList());
   }
 
@@ -86,6 +139,8 @@ class GameService {
         .eq('user_id', userId)
         .order('created_at', ascending: false)
         .limit(limit);
-    return (rows as List).map((r) => Bet.fromJson(r as Map<String, dynamic>)).toList();
+    return (rows as List)
+        .map((r) => Bet.fromJson(r as Map<String, dynamic>))
+        .toList();
   }
 }

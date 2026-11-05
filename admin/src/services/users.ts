@@ -58,6 +58,41 @@ export async function getUserBets(userId: string): Promise<BetRow[]> {
   return data ?? [];
 }
 
+// Logins without "@" become an internal address. Must stay in sync with
+// supabase/functions/create-player/index.ts and the mobile PlayerLogin.
+export const PLAYER_LOGIN_DOMAIN = 'joueurs.crashx.app';
+
+export function displayLogin(email: string): string {
+  return email.endsWith(`@${PLAYER_LOGIN_DOMAIN}`) ? email.split('@')[0] : email;
+}
+
+export function isValidLogin(login: string): boolean {
+  const value = login.trim().toLowerCase();
+  return value.includes('@') || /^[a-z0-9._-]{3,30}$/.test(value);
+}
+
+async function invokeCreatePlayer(body: Record<string, unknown>): Promise<void> {
+  const { error } = await supabase.functions.invoke('create-player', { body });
+  if (error) {
+    const context = (error as { context?: Response }).context;
+    const details = context ? await context.json().catch(() => null) : null;
+    throw new Error(details?.error ?? error.message);
+  }
+}
+
+export async function createPlayer(params: {
+  login: string;
+  password: string;
+  display_name: string;
+  max_devices: number;
+}): Promise<void> {
+  await invokeCreatePlayer({ action: 'create', ...params });
+}
+
+export async function setPlayerPassword(userId: string, password: string): Promise<void> {
+  await invokeCreatePlayer({ action: 'set_password', user_id: userId, password });
+}
+
 export async function blockUser(userId: string): Promise<void> {
   const { error } = await supabase.rpc('admin_block_user', { p_user_id: userId });
   if (error) throw error;

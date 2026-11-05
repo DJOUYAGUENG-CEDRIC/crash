@@ -84,12 +84,19 @@ class _BalanceCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   balance == null ? '…' : '${Formatters.amount(balance!)} FCFA',
-                  style: AppTextStyles.displayLarge.copyWith(fontSize: 30, color: Colors.white),
+                  style: AppTextStyles.displayLarge.copyWith(
+                    fontSize: 30,
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 36),
+          const Icon(
+            Icons.account_balance_wallet_rounded,
+            color: Colors.white,
+            size: 36,
+          ),
         ],
       ),
     );
@@ -110,7 +117,11 @@ class _PromoBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.rocket_launch_rounded, color: AppColors.accent, size: 28),
+          const Icon(
+            Icons.rocket_launch_rounded,
+            color: AppColors.accent,
+            size: 28,
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
@@ -161,7 +172,11 @@ class _PlayCard extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.18),
                   borderRadius: AppRadius.mdRadius,
                 ),
-                child: const Icon(Icons.trending_up_rounded, color: AppColors.primaryVariant, size: 32),
+                child: const Icon(
+                  Icons.trending_up_rounded,
+                  color: AppColors.primaryVariant,
+                  size: 32,
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -174,7 +189,10 @@ class _PlayCard extends StatelessWidget {
                   ],
                 ),
               ),
-              FilledButton(onPressed: () => context.go('/crash'), child: const Text('JOUER')),
+              FilledButton(
+                onPressed: () => context.go('/crash'),
+                child: const Text('JOUER'),
+              ),
             ],
           ),
         ),
@@ -192,7 +210,9 @@ class _StatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: _StatTile(label: 'Tours récents', value: '$roundsToday')),
+        Expanded(
+          child: _StatTile(label: 'Tours récents', value: '$roundsToday'),
+        ),
         const SizedBox(width: AppSpacing.md),
         const Expanded(
           child: _StatTile(label: 'Mode', value: ''),
@@ -203,11 +223,10 @@ class _StatsRow extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.label, required this.value, this.valueColor});
+  const _StatTile({required this.label, required this.value});
 
   final String label;
   final String value;
-  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -221,7 +240,7 @@ class _StatTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(value, style: AppTextStyles.heading1.copyWith(color: valueColor)),
+          Text(value, style: AppTextStyles.heading1),
           const SizedBox(height: AppSpacing.xs),
           Text(label, style: AppTextStyles.caption),
         ],

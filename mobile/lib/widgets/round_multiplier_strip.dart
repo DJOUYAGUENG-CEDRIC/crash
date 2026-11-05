@@ -20,7 +20,10 @@ class RoundMultiplierStrip extends StatelessWidget {
     final crashed = rounds.where((r) => r.crashMultiplier != null).toList();
 
     if (crashed.isEmpty) {
-      return Text('Aucun tour récent pour le moment.', style: AppTextStyles.bodyMuted);
+      return Text(
+        'Aucun tour récent pour le moment.',
+        style: AppTextStyles.bodyMuted,
+      );
     }
 
     return SizedBox(
@@ -29,7 +32,8 @@ class RoundMultiplierStrip extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: crashed.length,
         separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
-        itemBuilder: (context, index) => _MultiplierChip(value: crashed[index].crashMultiplier!),
+        itemBuilder: (context, index) =>
+            _MultiplierChip(value: crashed[index].crashMultiplier!),
       ),
     );
   }
@@ -46,7 +50,10 @@ class _MultiplierChip extends StatelessWidget {
     final color = isHigh ? AppColors.success : AppColors.danger;
     return Container(
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.14),
         borderRadius: AppRadius.pillRadius,
@@ -54,7 +61,10 @@ class _MultiplierChip extends StatelessWidget {
       ),
       child: Text(
         Formatters.multiplier(value),
-        style: AppTextStyles.caption.copyWith(color: color, fontWeight: FontWeight.w800),
+        style: AppTextStyles.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

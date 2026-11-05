@@ -17,11 +17,12 @@ class WalletTransaction {
     required this.createdAt,
   });
 
-  factory WalletTransaction.fromJson(Map<String, dynamic> json) => WalletTransaction(
-    id: json['id'] as String,
-    type: TransactionType.fromJson(json['type'] as String),
-    amount: (json['amount'] as num).toDouble(),
-    balanceAfter: (json['balance_after'] as num).toDouble(),
-    createdAt: DateTime.parse(json['created_at'] as String),
-  );
+  factory WalletTransaction.fromJson(Map<String, dynamic> json) =>
+      WalletTransaction(
+        id: json['id'] as String,
+        type: TransactionType.fromJson(json['type'] as String),
+        amount: (json['amount'] as num).toDouble(),
+        balanceAfter: (json['balance_after'] as num).toDouble(),
+        createdAt: DateTime.parse(json['created_at'] as String),
+      );
 }

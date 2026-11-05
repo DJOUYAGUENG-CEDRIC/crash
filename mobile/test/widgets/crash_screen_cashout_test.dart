@@ -37,6 +37,57 @@ Finder _cashoutButtonFinder() => find.byWidgetPredicate(
 );
 
 void main() {
+  testWidgets('a cashed-out player sees the same shared crash as everyone', (
+    tester,
+  ) async {
+    final cashedOutBet = sampleBet(
+      status: BetStatus.cashedOut,
+      cashoutMultiplier: 1.2,
+      payout: 120,
+      cashedOutAt: DateTime.now(),
+    );
+
+    await tester.pumpWidget(
+      _buildApp(
+        fakeGame: FakeGameService(),
+        round: sampleRound(
+          status: RoundStatus.crashed,
+          crashMultiplier: 1.5,
+          runningStartedAt: DateTime.now().subtract(const Duration(seconds: 7)),
+        ),
+        myBets: [cashedOutBet],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('global-crash-stage')), findsOneWidget);
+    expect(find.text('1.50x'), findsWidgets);
+  });
+
+  testWidgets('no OBTENIR button for an active bet of another round', (
+    tester,
+  ) async {
+    final staleBet = sampleBet(
+      roundId: 'round-0',
+      slot: 1,
+      status: BetStatus.active,
+    );
+
+    await tester.pumpWidget(
+      _buildApp(
+        fakeGame: FakeGameService(),
+        round: sampleRound(
+          status: RoundStatus.running,
+          runningStartedAt: DateTime.now(),
+        ),
+        myBets: [staleBet],
+      ),
+    );
+    await tester.pump();
+
+    expect(_cashoutButtonFinder(), findsNothing);
+  });
+
   testWidgets(
     'OBTENIR appears for an active bet once the round is running, and cashes out on tap',
     (tester) async {

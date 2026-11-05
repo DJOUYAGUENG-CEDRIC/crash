@@ -1,6 +1,20 @@
 # React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This React + Vite app contains the CRASHX admin dashboard and the public demo predictor.
+
+## Public demo predictor
+
+The `/predictor` route displays the exact server-programmed multiplier and recent results for the CRASHX virtual-money demo. It is intentionally public and must only be deployed against the demo Supabase project.
+
+### Deploy to Vercel
+
+1. Commit and push the repository to GitHub, then import that repository into Vercel.
+2. Set **Root Directory** to `admin`.
+3. Select **Vite** if Vercel does not detect it automatically. Set `npm run build` as the build command and `dist` as the output directory. Vercel installs dependencies from `admin/package.json`.
+4. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in **Project Settings → Environment Variables**. Use the URL and public anon/publishable key from the demo Supabase project. Never add a `service_role` key to Vercel.
+5. Redeploy after setting the variables. Open `/predictor` on the generated Vercel domain.
+
+`vercel.json` rewrites direct requests such as `/predictor` to the React app entry point. Before testing the page, apply `supabase/migrations/0025_demo_round_predictions.sql` to the writable demo Supabase database; the project shown in read-only mode must be unlocked first. The migration exposes exact round targets publicly: never apply it to a real-money environment.
 
 Currently, two official plugins are available:
 

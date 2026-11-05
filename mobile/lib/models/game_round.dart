@@ -10,7 +10,6 @@ class GameRound {
   final String id;
   final int roundNumber;
   final RoundStatus status;
-  final double? targetMultiplier;
   final double? crashMultiplier;
   final int? countdown;
   final DateTime? bettingStartedAt;
@@ -24,7 +23,6 @@ class GameRound {
     required this.id,
     required this.roundNumber,
     required this.status,
-    this.targetMultiplier,
     required this.crashMultiplier,
     this.countdown,
     required this.bettingStartedAt,
@@ -39,7 +37,6 @@ class GameRound {
     id: json['id'] as String,
     roundNumber: (json['round_number'] as num).toInt(),
     status: RoundStatus.fromJson(json['status'] as String),
-    targetMultiplier: _boundedMultiplier(json['target_multiplier'] as num?),
     crashMultiplier: _boundedMultiplier(json['crash_multiplier'] as num?),
     countdown: _boundedCountdown(json['countdown'] as num?),
     bettingStartedAt: json['betting_started_at'] == null
@@ -65,13 +62,7 @@ class GameRound {
     final elapsedSeconds =
         now.difference(runningStartedAt!).inMilliseconds / 1000.0;
     final calculated = math.exp(growthRate * elapsedSeconds);
-    final target = targetMultiplier;
-    return math.min(
-      calculated,
-      target == null
-          ? GameConstants.maxMultiplier
-          : math.min(target, GameConstants.maxMultiplier),
-    );
+    return math.min(calculated, GameConstants.maxMultiplier);
   }
 }
 
@@ -82,8 +73,5 @@ double? _boundedMultiplier(num? value) {
 
 int? _boundedCountdown(num? value) {
   if (value == null) return null;
-  return value
-      .toInt()
-      .clamp(0, GameConstants.bettingDurationSeconds)
-      .toInt();
+  return value.toInt().clamp(0, GameConstants.bettingDurationSeconds).toInt();
 }

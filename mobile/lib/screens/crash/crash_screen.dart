@@ -7,6 +7,7 @@ import '../../core/constants/game_constants.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/server_clock.dart';
 import '../../models/enums.dart';
 import '../../models/game_round.dart';
 import '../../providers/game_providers.dart';
@@ -19,12 +20,11 @@ import 'bet_panel.dart';
 
 /// The Crash tab (spec §17-§21) — the centerpiece screen: live animated
 /// multiplier + curve, two independent bet slots.
-class CrashScreen extends ConsumerWidget {
+class CrashScreen extends StatelessWidget {
   const CrashScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final round = ref.watch(currentRoundProvider).value;
+  Widget build(BuildContext context) {
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 72),
@@ -48,7 +48,7 @@ class CrashScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            _GameStage(round: round),
+            const _GameStageConnector(),
             const SizedBox(height: 5),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -77,6 +77,16 @@ class CrashScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _GameStageConnector extends ConsumerWidget {
+  const _GameStageConnector();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final round = ref.watch(currentRoundProvider).value;
+    return _GameStage(round: round);
   }
 }
 
@@ -145,9 +155,7 @@ class _GameStageState extends State<_GameStage>
   @override
   void didUpdateWidget(covariant _GameStage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.round?.status != widget.round?.status) {
-      _syncAxisAnimation();
-    }
+    _syncAxisAnimation();
   }
 
   void _syncAxisAnimation() {
@@ -171,7 +179,6 @@ class _GameStageState extends State<_GameStage>
   @override
   Widget build(BuildContext context) {
     final round = widget.round;
-    final status = round?.status;
     return Container(
       height: 160,
       width: double.infinity,
@@ -180,7 +187,7 @@ class _GameStageState extends State<_GameStage>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const StarfieldBackground(),
+          const RepaintBoundary(child: StarfieldBackground()),
           AnimatedBuilder(
             animation: _axisController,
             builder: (context, child) => Positioned.fill(
@@ -189,7 +196,7 @@ class _GameStageState extends State<_GameStage>
               ),
             ),
           ),
-          switch (status) {
+          switch (round?.status) {
             null => const _CountdownDisplay(
               seconds: GameConstants.bettingDurationSeconds,
             ),
@@ -314,7 +321,7 @@ class _WaitingStage extends StatefulWidget {
 class _WaitingStageState extends State<_WaitingStage>
     with TickerProviderStateMixin {
   late final AnimationController _particleController;
-  late final AnimationController _ballController;
+  late final AnimationController _clockController;
 
   @override
   void initState() {
@@ -323,46 +330,60 @@ class _WaitingStageState extends State<_WaitingStage>
       vsync: this,
       duration: const Duration(milliseconds: 2200),
     )..repeat();
-    _ballController = AnimationController(
+    // This controller only requests repaints. Countdown and dash positions
+    // are derived from the shared betting_started_at timestamp below.
+    _clockController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 820),
-    )..forward();
-  }
-
-  @override
-  void didUpdateWidget(covariant _WaitingStage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.round.countdown != widget.round.countdown) {
-      _ballController.forward(from: 0);
-    }
+      duration: const Duration(seconds: 1),
+    )..repeat();
   }
 
   @override
   void dispose() {
     _particleController.dispose();
-    _ballController.dispose();
+    _clockController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final seconds = (widget.round.countdown ?? 0)
-        .clamp(0, GameConstants.bettingDurationSeconds)
-        .toInt();
     return AnimatedBuilder(
-      animation: Listenable.merge([_particleController, _ballController]),
-      builder: (context, child) => Stack(
-        fit: StackFit.expand,
-        children: [
-          CustomPaint(
-            painter: _FallingDebrisPainter(_particleController.value),
-          ),
-          _CountdownDisplay(
-            seconds: seconds,
-            ballProgress: _ballController.value,
-          ),
-        ],
-      ),
+      animation: Listenable.merge([_particleController, _clockController]),
+      builder: (context, child) {
+        final startedAt = widget.round.bettingStartedAt;
+        final elapsedMs = startedAt == null
+            ? null
+            : math.max(
+                0,
+                ServerClock.now().difference(startedAt).inMilliseconds,
+              );
+        final remainingMs = elapsedMs == null
+            ? null
+            : math.max(
+                0,
+                GameConstants.bettingDurationSeconds * 1000 - elapsedMs,
+              );
+        final seconds = remainingMs == null
+            ? (widget.round.countdown ?? 0)
+                  .clamp(0, GameConstants.bettingDurationSeconds)
+                  .toInt()
+            : (remainingMs / 1000).ceil().clamp(
+                0,
+                GameConstants.bettingDurationSeconds,
+              );
+        final ballProgress = elapsedMs == null
+            ? _clockController.value
+            : (elapsedMs % 1000) / 1000.0;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            CustomPaint(
+              painter: _FallingDebrisPainter(_particleController.value),
+            ),
+            _CountdownDisplay(seconds: seconds, ballProgress: ballProgress),
+          ],
+        );
+      },
     );
   }
 }
@@ -559,18 +580,11 @@ class _RunningStage extends StatelessWidget {
       builder: (context, multiplier) {
         final rawElapsedSeconds = round.runningStartedAt == null
             ? 0.0
-            : DateTime.now()
+            : ServerClock.now()
                       .difference(round.runningStartedAt!)
                       .inMilliseconds /
                   1000.0;
-        final target = round.targetMultiplier;
-        final reachedTarget = target != null && multiplier >= target;
-        final crashElapsedSeconds = target == null || target <= 1
-            ? rawElapsedSeconds
-            : math.log(target) / GameConstants.growthRate;
-        final elapsedSeconds = reachedTarget
-            ? math.min(rawElapsedSeconds, crashElapsedSeconds)
-            : rawElapsedSeconds;
+        final elapsedSeconds = rawElapsedSeconds;
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -578,11 +592,11 @@ class _RunningStage extends StatelessWidget {
               painter: CrashCurvePainter(
                 multiplier: multiplier,
                 elapsedSeconds: elapsedSeconds,
-                crashed: reachedTarget,
+                crashed: false,
                 drawPlane: false,
               ),
             ),
-            if (!reachedTarget) _PlaneSprite(elapsedSeconds: elapsedSeconds),
+            _PlaneSprite(elapsedSeconds: elapsedSeconds),
             Positioned(
               right: 22,
               bottom: 18,
@@ -658,8 +672,9 @@ class _CrashedStage extends StatelessWidget {
         ? 0.0
         : math.log(crashValue) / GameConstants.growthRate;
     return TweenAnimationBuilder<double>(
+      key: const ValueKey('global-crash-stage'),
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 1050),
+      duration: const Duration(milliseconds: 900),
       curve: Curves.linear,
       builder: (context, explosionProgress, child) => Stack(
         fit: StackFit.expand,

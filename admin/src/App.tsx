@@ -15,6 +15,7 @@ import { StatisticsPage } from './pages/StatisticsPage';
 import { LogsPage } from './pages/LogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { InvitePublicPage } from './pages/InvitePublicPage';
+import { PredictorPage } from './pages/PredictorPage';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             {/* Public routes — no auth required */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/invite/:token" element={<InvitePublicPage />} />
+            <Route path="/predictor" element={<PredictorPage />} />
 
             {/* Protected dashboard routes */}
             <Route

@@ -55,8 +55,8 @@ export const PERMISSION_LABELS: Record<AdminPermission, string> = {
   MANAGE_USERS: 'Gérer les utilisateurs (ajuster le solde)',
   BLOCK_USERS: 'Bloquer / débloquer des utilisateurs',
   MANAGE_DEVICES: 'Gérer les appareils',
-  CREATE_INVITATIONS: 'Créer des invitations',
-  MANAGE_INVITATIONS: 'Gérer les invitations (révoquer)',
+  CREATE_INVITATIONS: 'Créer des comptes joueurs',
+  MANAGE_INVITATIONS: 'Gérer les invitations (ancien mode)',
   VIEW_LOGS: "Voir les journaux d'activité",
   VIEW_SETTINGS: 'Voir les paramètres',
 };
@@ -187,6 +187,16 @@ export type GameSettingsRow = {
   updated_at: string;
 }
 
+export type DemoRoundPredictionRow = {
+  round_id: string;
+  round_number: number;
+  status: RoundStatus;
+  target_multiplier: number;
+  crash_multiplier: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type AppSettingsRow = {
   id: number;
   current_version: string;
@@ -222,6 +232,7 @@ export interface Database {
       authorized_devices: TableDef<AuthorizedDeviceRow>;
       admin_logs: TableDef<AdminLogRow>;
       game_settings: TableDef<GameSettingsRow>;
+      demo_round_predictions: TableDef<DemoRoundPredictionRow>;
       app_settings: TableDef<AppSettingsRow>;
     };
     Views: Record<string, never>;

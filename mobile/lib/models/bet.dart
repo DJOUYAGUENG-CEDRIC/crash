@@ -11,6 +11,7 @@ class Bet {
   final double? cashoutMultiplier;
   final double? payout;
   final DateTime placedAt;
+  final DateTime? flightStartedAt;
   final DateTime? cashedOutAt;
 
   const Bet({
@@ -24,6 +25,7 @@ class Bet {
     required this.cashoutMultiplier,
     required this.payout,
     required this.placedAt,
+    required this.flightStartedAt,
     required this.cashedOutAt,
   });
 
@@ -34,14 +36,25 @@ class Bet {
     slot: (json['slot'] as num).toInt(),
     amount: (json['amount'] as num).toDouble(),
     status: BetStatus.fromJson(json['status'] as String),
-    autoCashoutMultiplier: (json['auto_cashout_multiplier'] as num?)?.toDouble(),
+    autoCashoutMultiplier: (json['auto_cashout_multiplier'] as num?)
+        ?.toDouble(),
     cashoutMultiplier: (json['cashout_multiplier'] as num?)?.toDouble(),
     payout: (json['payout'] as num?)?.toDouble(),
     placedAt: DateTime.parse(json['placed_at'] as String),
-    cashedOutAt: json['cashed_out_at'] == null ? null : DateTime.parse(json['cashed_out_at'] as String),
+    flightStartedAt: json['flight_started_at'] == null
+        ? null
+        : DateTime.parse(json['flight_started_at'] as String),
+    cashedOutAt: json['cashed_out_at'] == null
+        ? null
+        : DateTime.parse(json['cashed_out_at'] as String),
   );
 
-  Bet copyWith({BetStatus? status, double? cashoutMultiplier, double? payout, DateTime? cashedOutAt}) => Bet(
+  Bet copyWith({
+    BetStatus? status,
+    double? cashoutMultiplier,
+    double? payout,
+    DateTime? cashedOutAt,
+  }) => Bet(
     id: id,
     roundId: roundId,
     userId: userId,
@@ -52,6 +65,7 @@ class Bet {
     cashoutMultiplier: cashoutMultiplier ?? this.cashoutMultiplier,
     payout: payout ?? this.payout,
     placedAt: placedAt,
+    flightStartedAt: flightStartedAt,
     cashedOutAt: cashedOutAt ?? this.cashedOutAt,
   );
 }

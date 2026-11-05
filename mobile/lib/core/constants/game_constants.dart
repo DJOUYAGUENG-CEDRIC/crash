@@ -6,7 +6,7 @@ class GameConstants {
   GameConstants._();
 
   static const double growthRate = 0.06;
-  static const double maxMultiplier = 100.0;
+  static const double maxMultiplier = 15.0;
   static const int bettingDurationSeconds = 7;
 
   static const List<double> quickBetAmounts = [
@@ -19,6 +19,7 @@ class GameConstants {
   ];
 
   static const double minAutoCashoutMultiplier = 1.01;
+  static const double maxAutoCashoutMultiplier = maxMultiplier;
 
   /// Player-facing round phase, mirrors the Postgres `round_status` enum.
   static const List<String> roundStatuses = [

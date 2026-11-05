@@ -189,6 +189,9 @@ Bet _bet(BetStatus status, {double? cashoutMultiplier, double? payout}) {
     cashoutMultiplier: cashoutMultiplier,
     payout: payout,
     placedAt: DateTime.now(),
+    flightStartedAt: status == BetStatus.active || status == BetStatus.cashedOut
+        ? DateTime.now().subtract(const Duration(seconds: 10))
+        : null,
     cashedOutAt: null,
   );
 }

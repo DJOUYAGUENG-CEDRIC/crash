@@ -7,13 +7,14 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/error_messages.dart';
+import '../../core/utils/player_login.dart';
 import '../../providers/activation_providers.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/service_providers.dart';
 
 /// Sign-in only — CrashX never exposes a public signup form (spec §45).
-/// New accounts are created exclusively through an invitation, via
-/// [ActivationScreen] reached from the link below.
+/// Player logins are created by an administrator (Edge Function
+/// create-player) and handed to the player.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -46,7 +47,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref
           .read(authServiceProvider)
           .signIn(
-            email: _emailController.text.trim(),
+            email: PlayerLogin.toEmail(_emailController.text),
             password: _passwordController.text,
           );
 
@@ -101,15 +102,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    autofillHints: const [AutofillHints.email],
+                    autofillHints: const [AutofillHints.username],
+                    autocorrect: false,
                     style: AppTextStyles.body,
                     decoration: const InputDecoration(
-                      labelText: 'E-mail',
-                      prefixIcon: Icon(Icons.email_outlined),
+                      labelText: 'Identifiant',
+                      prefixIcon: Icon(Icons.person_outline),
                     ),
                     validator: (value) =>
-                        (value == null || !value.contains('@'))
-                        ? 'Adresse e-mail invalide.'
+                        (value == null || !PlayerLogin.isValid(value))
+                        ? 'Identifiant invalide.'
                         : null,
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -161,9 +163,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         : const Text('SE CONNECTER'),
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  TextButton(
-                    onPressed: () => context.push('/activate'),
-                    child: const Text("J'ai un code d'invitation"),
+                  Text(
+                    "Vos identifiants vous sont fournis par l'administrateur.",
+                    style: AppTextStyles.bodyMuted,
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),

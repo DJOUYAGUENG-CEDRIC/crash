@@ -35,14 +35,26 @@ class BonusScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             transactionsAsync.when(
               data: (transactions) {
-                final bonuses = transactions.where((t) => t.type == TransactionType.bonusDemo).toList();
+                final bonuses = transactions
+                    .where((t) => t.type == TransactionType.bonusDemo)
+                    .toList();
                 if (bonuses.isEmpty) {
-                  return Text('Aucun bonus reçu pour le moment.', style: AppTextStyles.bodyMuted);
+                  return Text(
+                    'Aucun bonus reçu pour le moment.',
+                    style: AppTextStyles.bodyMuted,
+                  );
                 }
-                return Column(children: [for (final t in bonuses) _BonusRow(transaction: t)]);
+                return Column(
+                  children: [
+                    for (final t in bonuses) _BonusRow(transaction: t),
+                  ],
+                );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => Text('Impossible de charger vos bonus.', style: AppTextStyles.bodyMuted),
+              error: (error, stackTrace) => Text(
+                'Impossible de charger vos bonus.',
+                style: AppTextStyles.bodyMuted,
+              ),
             ),
           ],
         ),
@@ -59,12 +71,18 @@ class _WelcomeBonusCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryVariant]),
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryVariant],
+        ),
         borderRadius: AppRadius.lgRadius,
       ),
       child: Row(
         children: [
-          const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 36),
+          const Icon(
+            Icons.card_giftcard_rounded,
+            color: Colors.white,
+            size: 36,
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -72,13 +90,19 @@ class _WelcomeBonusCard extends StatelessWidget {
               children: [
                 const Text(
                   'Bonus de bienvenue',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   "Un crédit vous a été offert à l'activation de votre compte pour découvrir CRASH — "
                   'aucune valeur réelle.',
-                  style: AppTextStyles.bodyMuted.copyWith(color: Colors.white70),
+                  style: AppTextStyles.bodyMuted.copyWith(
+                    color: Colors.white70,
+                  ),
                 ),
               ],
             ),
@@ -106,20 +130,30 @@ class _BonusRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.card_giftcard_rounded, color: AppColors.accent, size: 20),
+          const Icon(
+            Icons.card_giftcard_rounded,
+            color: AppColors.accent,
+            size: 20,
+          ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Bonus', style: AppTextStyles.body),
-                Text(Formatters.dateTime(transaction.createdAt), style: AppTextStyles.caption),
+                Text(
+                  Formatters.dateTime(transaction.createdAt),
+                  style: AppTextStyles.caption,
+                ),
               ],
             ),
           ),
           Text(
             '+${Formatters.amount(transaction.amount)} FCFA',
-            style: AppTextStyles.body.copyWith(color: AppColors.success, fontWeight: FontWeight.w700),
+            style: AppTextStyles.body.copyWith(
+              color: AppColors.success,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),

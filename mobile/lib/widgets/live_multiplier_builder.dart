@@ -2,6 +2,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import '../core/constants/game_constants.dart';
+import '../core/utils/server_clock.dart';
 import '../models/enums.dart';
 import '../models/game_round.dart';
 
@@ -15,7 +16,11 @@ import '../models/game_round.dart';
 /// the live potential-payout figure inside each bet panel, so there's a
 /// single ticking implementation instead of one per usage site.
 class LiveMultiplierBuilder extends StatefulWidget {
-  const LiveMultiplierBuilder({super.key, required this.round, required this.builder});
+  const LiveMultiplierBuilder({
+    super.key,
+    required this.round,
+    required this.builder,
+  });
 
   final GameRound? round;
   final Widget Function(BuildContext context, double multiplier) builder;
@@ -24,28 +29,35 @@ class LiveMultiplierBuilder extends StatefulWidget {
   State<LiveMultiplierBuilder> createState() => _LiveMultiplierBuilderState();
 }
 
-class _LiveMultiplierBuilderState extends State<LiveMultiplierBuilder> with SingleTickerProviderStateMixin {
+class _LiveMultiplierBuilderState extends State<LiveMultiplierBuilder>
+    with SingleTickerProviderStateMixin {
+  static const _frameInterval = Duration(milliseconds: 33);
+
   late final Ticker _ticker;
   late double _multiplier;
+  Duration _lastUpdate = Duration.zero;
 
   @override
   void initState() {
     super.initState();
     _multiplier = _compute();
-    _ticker = createTicker(_onTick)..start();
+    _ticker = createTicker(_onTick);
+    _syncTicker();
   }
 
   double _compute() {
     final round = widget.round;
     if (round == null) return 1.0;
     if (round.status == RoundStatus.running) {
-      return round.liveMultiplier(GameConstants.growthRate, DateTime.now());
+      return round.liveMultiplier(GameConstants.growthRate, ServerClock.now());
     }
     return round.crashMultiplier ?? 1.0;
   }
 
   void _onTick(Duration elapsed) {
     if (widget.round?.status != RoundStatus.running) return;
+    if (elapsed - _lastUpdate < _frameInterval) return;
+    _lastUpdate = elapsed;
     final next = _compute();
     if (next != _multiplier) {
       setState(() => _multiplier = next);
@@ -57,6 +69,17 @@ class _LiveMultiplierBuilderState extends State<LiveMultiplierBuilder> with Sing
     super.didUpdateWidget(oldWidget);
     if (oldWidget.round != widget.round) {
       _multiplier = _compute();
+    }
+    _syncTicker();
+  }
+
+  void _syncTicker() {
+    final shouldRun = widget.round?.status == RoundStatus.running;
+    if (shouldRun && !_ticker.isActive) {
+      _lastUpdate = Duration.zero;
+      _ticker.start();
+    } else if (!shouldRun && _ticker.isActive) {
+      _ticker.stop();
     }
   }
 
