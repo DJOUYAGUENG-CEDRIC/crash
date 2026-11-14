@@ -6,6 +6,7 @@ import 'package:crashx/models/enums.dart';
 import 'package:crashx/models/game_round.dart';
 import 'package:crashx/providers/game_providers.dart';
 import 'package:crashx/providers/service_providers.dart';
+import 'package:crashx/screens/crash/bet_panel.dart';
 import 'package:crashx/screens/crash/crash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,6 +44,35 @@ Widget _buildApp({
 }
 
 void main() {
+  testWidgets('landscape layout keeps both betting panels side by side', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(420, 240);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _buildApp(
+        fakeGame: FakeGameService(),
+        round: sampleRound(status: RoundStatus.betting),
+      ),
+    );
+    await tester.pump();
+
+    final panels = find.byType(BetPanel);
+    expect(panels, findsNWidgets(2));
+    final firstPanel = tester.getRect(panels.first);
+    final secondPanel = tester.getRect(panels.last);
+    expect(secondPanel.center.dx, greaterThan(firstPanel.center.dx));
+    expect((secondPanel.center.dy - firstPanel.center.dy).abs(), lessThan(8));
+    expect(
+      tester.getSize(find.byKey(const ValueKey('crash-game-stage'))).height,
+      112,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('plane crashes at the exact shared target without overshooting', (
     tester,
   ) async {
@@ -95,11 +125,7 @@ void main() {
     expect(find.byKey(const ValueKey('global-crash-stage')), findsOneWidget);
 
     rounds.add(
-      sampleRound(
-        id: 'round-2',
-        status: RoundStatus.waiting,
-        countdown: 7,
-      ),
+      sampleRound(id: 'round-2', status: RoundStatus.waiting, countdown: 7),
     );
     await tester.pump();
     await tester.pump();
@@ -150,6 +176,30 @@ void main() {
         (widget) =>
             widget is Text &&
             widget.data == '1' &&
+            widget.style?.fontSize == 40,
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('countdown starts at 7 for a new round', (tester) async {
+    await tester.pumpWidget(
+      _buildApp(
+        fakeGame: FakeGameService(),
+        round: sampleRound(
+          status: RoundStatus.waiting,
+          countdown: 7,
+          bettingStartedAt: DateTime.now(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.data == '7' &&
             widget.style?.fontSize == 40,
       ),
       findsOneWidget,

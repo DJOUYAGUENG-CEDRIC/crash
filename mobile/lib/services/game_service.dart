@@ -19,17 +19,30 @@ class GameService {
   Stream<GameRound?> watchCurrentRound() {
     final controller = StreamController<GameRound?>();
     GameRound? latest;
+    var hasPublished = false;
     var polling = false;
 
-    void publish(List<Map<String, dynamic>> rows, {bool force = true}) {
+    bool sameRound(GameRound? left, GameRound? right) {
+      if (left == null || right == null) return left == right;
+      return left.id == right.id &&
+          left.roundNumber == right.roundNumber &&
+          left.status == right.status &&
+          left.crashMultiplier == right.crashMultiplier &&
+          left.countdown == right.countdown &&
+          left.bettingStartedAt == right.bettingStartedAt &&
+          left.runningStartedAt == right.runningStartedAt &&
+          left.crashedAt == right.crashedAt &&
+          left.totalBetsAmount == right.totalBetsAmount &&
+          left.totalPlayers == right.totalPlayers &&
+          left.createdAt == right.createdAt;
+    }
+
+    void publish(List<Map<String, dynamic>> rows) {
       final next = rows.isEmpty ? null : GameRound.fromJson(rows.first);
-      final changed =
-          latest?.id != next?.id ||
-          latest?.status != next?.status ||
-          latest?.countdown != next?.countdown ||
-          latest?.crashMultiplier != next?.crashMultiplier;
+      final changed = !hasPublished || !sameRound(latest, next);
       latest = next;
-      if (!controller.isClosed && (force || changed)) controller.add(next);
+      hasPublished = true;
+      if (!controller.isClosed && changed) controller.add(next);
     }
 
     // Every device animates from the server's running_started_at, so align
@@ -43,10 +56,10 @@ class GameService {
         .limit(1)
         .listen(publish, onError: controller.addError);
 
-    // Realtime normally delivers every transition immediately. Polling is a
-    // lightweight fallback for phones that briefly lose any event, including
-    // the transition from countdown to flight or from flight to crash.
-    final watchdog = Timer.periodic(const Duration(seconds: 5), (_) async {
+    // Realtime normally delivers transitions immediately. Poll once per
+    // second as a fallback so a missed final countdown event cannot leave
+    // the display stuck on 1 for several extra seconds.
+    final watchdog = Timer.periodic(const Duration(seconds: 1), (_) async {
       if (polling) return;
       polling = true;
       try {
@@ -55,7 +68,7 @@ class GameService {
             .select()
             .order('created_at', ascending: false)
             .limit(1);
-        publish((rows as List).cast<Map<String, dynamic>>(), force: false);
+        publish((rows as List).cast<Map<String, dynamic>>());
       } catch (error, stackTrace) {
         if (!controller.isClosed) controller.addError(error, stackTrace);
       } finally {
@@ -94,7 +107,8 @@ class GameService {
           if (rows.isEmpty) return null;
           final target = rows.first['target_multiplier'] as num?;
           return target?.toDouble();
-        });
+        })
+        .distinct();
   }
 
   /// The signed-in player's bets on the shared current round only.

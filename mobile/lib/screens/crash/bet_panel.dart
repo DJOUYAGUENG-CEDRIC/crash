@@ -140,6 +140,8 @@ class _BetPanelState extends ConsumerState<BetPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
     final round = ref.watch(currentRoundProvider).value;
     final myBets = ref.watch(myBetsForCurrentRoundProvider).value ?? const [];
     final myBet = myBets.where((b) => b.slot == widget.slot).firstOrNull;
@@ -158,8 +160,8 @@ class _BetPanelState extends ConsumerState<BetPanel> {
         myBet.roundId == round?.id;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.all(6),
+      margin: EdgeInsets.symmetric(horizontal: isLandscape ? 2 : 4),
+      padding: EdgeInsets.all(isLandscape ? 4 : 6),
       decoration: BoxDecoration(
         color: const Color(0xFF171B3B),
         borderRadius: BorderRadius.circular(7),
@@ -172,23 +174,23 @@ class _BetPanelState extends ConsumerState<BetPanel> {
             child: Column(
               children: [
                 SizedBox(
-                  height: 40,
+                  height: isLandscape ? 32 : 40,
                   child: TextField(
                     controller: _amountController,
                     enabled: myBet == null,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Color(0xFF171B3B),
-                      fontSize: 18,
+                      fontSize: isLandscape ? 15 : 18,
                       fontWeight: FontWeight.w700,
                     ),
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: isLandscape ? 6 : 10,
+                        vertical: isLandscape ? 4 : 8,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
@@ -206,14 +208,19 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                         ),
                       ),
                       suffixIconConstraints: const BoxConstraints(
-                        minWidth: 40,
-                        minHeight: 40,
+                        minWidth: 32,
+                        minHeight: 32,
                       ),
                       suffixIcon: IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: 32,
+                          height: 32,
+                        ),
                         icon: const Icon(
                           Icons.close,
                           color: Color(0xFF20264B),
-                          size: 24,
+                          size: 18,
                         ),
                         onPressed: () =>
                             _setAmount(GameConstants.quickBetAmounts.first),
@@ -234,7 +241,7 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                   crossAxisCount: 3,
                   mainAxisSpacing: 4,
                   crossAxisSpacing: 5,
-                  childAspectRatio: 1.9,
+                  childAspectRatio: isLandscape ? 2 : 1.9,
                   children: [
                     for (final quick in GameConstants.quickBetAmounts)
                       _QuickChip(
@@ -259,7 +266,7 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                   ),
                   borderRadius: BorderRadius.circular(5),
                   child: Container(
-                    height: 42,
+                    height: isLandscape ? 34 : 42,
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
                       color: _autoCashoutEnabled
@@ -277,9 +284,9 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                           ? 'JEU AUTOMATIQUE\nACTIVÉ'
                           : 'ACTIVER LE JEU\nAUTOMATIQUE',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Color(0xFFFF762F),
-                        fontSize: 12,
+                        fontSize: isLandscape ? 9 : 12,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -308,7 +315,9 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                 ],
                 const SizedBox(height: 5),
                 SizedBox(
-                  height: _autoCashoutEnabled ? 55 : 66,
+                  height: _autoCashoutEnabled
+                      ? (isLandscape ? 48 : 55)
+                      : (isLandscape ? 48 : 66),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: canCashout
@@ -335,10 +344,10 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                             color: Colors.white,
                           )
                         : canCashout
-                        ? const Text(
+                        ? Text(
                             'OBTENIR',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: isLandscape ? 12 : 14,
                               fontWeight: FontWeight.w900,
                             ),
                           )
@@ -353,17 +362,17 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                                       ? 'PLACER UN PARI'
                                       : _disabledReason(round),
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 13,
+                                  style: TextStyle(
+                                    fontSize: isLandscape ? 10 : 13,
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),
                                 if (canBet)
-                                  const Text(
+                                  Text(
                                     '(sur le prochain tour)',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: isLandscape ? 8 : 10,
                                       color: Colors.white70,
                                     ),
                                   ),
@@ -405,13 +414,18 @@ class _QuickChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
     return InkWell(
       borderRadius: BorderRadius.circular(5),
       onTap: onTap,
       child: Container(
-        constraints: const BoxConstraints(minWidth: 48),
+        constraints: BoxConstraints(minWidth: isLandscape ? 0 : 48),
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+        padding: EdgeInsets.symmetric(
+          horizontal: isLandscape ? 2 : 4,
+          vertical: isLandscape ? 2 : 3,
+        ),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF3B3F78) : const Color(0xFF2A2F61),
           borderRadius: BorderRadius.circular(5),
@@ -424,9 +438,9 @@ class _QuickChip extends StatelessWidget {
           child: Text(
             Formatters.amount(amount),
             maxLines: 1,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 13,
+              fontSize: isLandscape ? 10 : 13,
               fontWeight: FontWeight.w700,
             ),
           ),

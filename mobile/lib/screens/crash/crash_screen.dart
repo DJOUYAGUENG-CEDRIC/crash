@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/game_constants.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/server_clock.dart';
@@ -26,6 +25,8 @@ class CrashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 72),
@@ -53,7 +54,7 @@ class CrashScreen extends StatelessWidget {
             const SizedBox(height: 5),
             LayoutBuilder(
               builder: (context, constraints) {
-                if (constraints.maxWidth < 700) {
+                if (constraints.maxWidth < 700 && !isLandscape) {
                   return const Column(
                     children: [
                       BetPanel(slot: 1),
@@ -66,7 +67,7 @@ class CrashScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(child: BetPanel(slot: 1)),
-                    SizedBox(width: AppSpacing.md),
+                    SizedBox(width: 8),
                     Expanded(child: BetPanel(slot: 2)),
                   ],
                 );
@@ -293,8 +294,11 @@ class _GameStageState extends State<_GameStage>
   @override
   Widget build(BuildContext context) {
     final round = _displayedRound;
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
     return Container(
-      height: 160,
+      key: const ValueKey('crash-game-stage'),
+      height: isLandscape ? 112 : 160,
       width: double.infinity,
       decoration: BoxDecoration(color: const Color(0xFF151936)),
       clipBehavior: Clip.antiAlias,

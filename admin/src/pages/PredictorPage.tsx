@@ -3,6 +3,9 @@ import { errorMessage } from '../context/ToastContext';
 import { supabase } from '../lib/supabase';
 import type { DemoRoundPredictionRow } from '../types/database';
 
+const backgroundColors = ['#e53935', '#7e57c2', '#1e88e5', '#fb8c00'];
+const backgroundColorChangeInterval = 5 * 60 * 1000;
+
 function isFinished(status: DemoRoundPredictionRow['status']): boolean {
   return status === 'CRASHED' || status === 'RESULT';
 }
@@ -17,9 +20,32 @@ function getMultiplier(round: DemoRoundPredictionRow): number {
 export function PredictorPage() {
   const [round, setRound] = useState<DemoRoundPredictionRow | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [backgroundColorIndex, setBackgroundColorIndex] = useState(0);
 
   useEffect(() => {
     document.title = 'CRASHX';
+  }, []);
+
+  useEffect(() => {
+    const startedAt = Date.now();
+
+    function updateBackgroundColor() {
+      const elapsedIntervals = Math.floor(
+        (Date.now() - startedAt) / backgroundColorChangeInterval,
+      );
+      setBackgroundColorIndex(elapsedIntervals % backgroundColors.length);
+    }
+
+    const timer = window.setInterval(
+      updateBackgroundColor,
+      backgroundColorChangeInterval,
+    );
+    document.addEventListener('visibilitychange', updateBackgroundColor);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', updateBackgroundColor);
+    };
   }, []);
 
   const loadCurrentRound = useCallback(async () => {
@@ -96,7 +122,10 @@ export function PredictorPage() {
   }, [loadCurrentRound]);
 
   return (
-    <main className="flex h-screen min-h-screen w-full items-center justify-center bg-[#078a43] text-white">
+    <main
+      className="flex h-screen min-h-screen w-full items-center justify-center text-white transition-colors duration-500"
+      style={{ backgroundColor: backgroundColors[backgroundColorIndex] }}
+    >
       {round ? (
         <h1 className="m-0 text-[clamp(5rem,24vw,10rem)] font-black leading-none tracking-[-0.07em] tabular-nums">
           {getMultiplier(round).toFixed(2)}x

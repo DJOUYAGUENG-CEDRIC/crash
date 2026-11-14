@@ -55,8 +55,10 @@ continuer (licences Android non acceptées : `flutter doctor --android-licenses`
    ```
 
    Fichiers, dans l'ordre numérique : `supabase/migrations/0001_initial_schema.sql`
-   → … → `0026_player_only_demo_predictions.sql` (toujours appliquer toutes
+   → … → `0028_launch_on_countdown_one.sql` (toujours appliquer toutes
    les migrations, chacune remplace les fonctions des précédentes).
+   La dernière migration fixe le décompte à 7 et lance le vol dès l'arrivée
+   sur 1, sans seconde d'attente supplémentaire.
 
 4. Déployer les Edge Functions :
 
