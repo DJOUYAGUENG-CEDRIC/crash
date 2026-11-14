@@ -16,6 +16,8 @@ import { LogsPage } from './pages/LogsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { InvitePublicPage } from './pages/InvitePublicPage';
 import { PredictorPage } from './pages/PredictorPage';
+import { PlayerLoginPage } from './pages/PlayerLoginPage';
+import { PlayerProtectedRoute } from './components/PlayerProtectedRoute';
 
 function App() {
   return (
@@ -25,8 +27,16 @@ function App() {
           <Routes>
             {/* Public routes — no auth required */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/player-login" element={<PlayerLoginPage />} />
             <Route path="/invite/:token" element={<InvitePublicPage />} />
-            <Route path="/predictor" element={<PredictorPage />} />
+            <Route
+              path="/predictor"
+              element={
+                <PlayerProtectedRoute>
+                  <PredictorPage />
+                </PlayerProtectedRoute>
+              }
+            />
 
             {/* Protected dashboard routes */}
             <Route

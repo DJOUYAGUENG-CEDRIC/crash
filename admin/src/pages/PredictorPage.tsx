@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { errorMessage } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { DemoRoundPredictionRow } from '../types/database';
 
@@ -23,6 +24,7 @@ function statusLabel(status: DemoRoundPredictionRow['status']): string {
 }
 
 export function PredictorPage() {
+  const { session } = useAuth();
   const [round, setRound] = useState<DemoRoundPredictionRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,13 +103,20 @@ export function PredictorPage() {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(91,255,162,0.2),_transparent_62%)]"
       />
 
-      <header className="absolute left-0 right-0 top-0 flex items-center justify-between px-5 py-5 sm:px-8">
+      <header className="absolute left-0 right-0 top-0 flex items-center justify-between gap-3 px-5 py-5 sm:px-8">
         <a href="/predictor" className="text-sm font-black tracking-[0.24em] text-white">
           CRASH<span className="text-[#b9ffcf]">X</span>
         </a>
-        <span className="rounded-full border border-white/25 bg-black/10 px-3 py-1.5 text-[10px] font-bold tracking-[0.12em] text-white/90">
-          DÉMO · ARGENT VIRTUEL
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="hidden text-xs text-white/75 sm:inline">{session?.user.email}</span>
+          <button
+            type="button"
+            onClick={() => void supabase.auth.signOut()}
+            className="rounded-full border border-white/25 bg-black/10 px-3 py-1.5 text-[10px] font-bold tracking-[0.08em] text-white/90 hover:bg-white/10"
+          >
+            Déconnexion
+          </button>
+        </div>
       </header>
 
       <section className="relative flex w-full max-w-xl flex-col items-center text-center">

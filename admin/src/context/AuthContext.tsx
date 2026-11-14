@@ -41,8 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAdminDisplayName(null);
       setPermissions(new Set());
       setAccessDenied(true);
-      await supabase.auth.signOut();
-      setSession(null);
       return;
     }
 

@@ -4,7 +4,7 @@ This React + Vite app contains the CRASHX admin dashboard and the public demo pr
 
 ## Public demo predictor
 
-The `/predictor` route displays the exact server-programmed multiplier and recent results for the CRASHX virtual-money demo. It is intentionally public and must only be deployed against the demo Supabase project.
+The `/player-login` route accepts existing CRASHX player credentials. Only authenticated accounts with an active player profile can open `/predictor`; public sign-up is not enabled.
 
 ### Deploy to Vercel
 
@@ -14,7 +14,7 @@ The `/predictor` route displays the exact server-programmed multiplier and recen
 4. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in **Project Settings → Environment Variables**. Use the URL and public anon/publishable key from the demo Supabase project. Never add a `service_role` key to Vercel.
 5. Redeploy after setting the variables. Open `/predictor` on the generated Vercel domain.
 
-`vercel.json` rewrites direct requests such as `/predictor` to the React app entry point. Before testing the page, apply `supabase/migrations/0025_demo_round_predictions.sql` to the writable demo Supabase database; the project shown in read-only mode must be unlocked first. The migration exposes exact round targets publicly: never apply it to a real-money environment.
+`vercel.json` rewrites direct requests such as `/predictor` to the React app entry point. Apply migrations `0025_demo_round_predictions.sql` and `0026_player_only_demo_predictions.sql` to the writable demo Supabase database. The second migration restricts reading to authenticated active players. These migrations expose exact round targets to demo players: never apply them to a real-money environment.
 
 Currently, two official plugins are available:
 

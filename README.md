@@ -55,7 +55,7 @@ continuer (licences Android non acceptées : `flutter doctor --android-licenses`
    ```
 
    Fichiers, dans l'ordre numérique : `supabase/migrations/0001_initial_schema.sql`
-   → … → `0025_demo_round_predictions.sql` (toujours appliquer toutes
+   → … → `0026_player_only_demo_predictions.sql` (toujours appliquer toutes
    les migrations, chacune remplace les fonctions des précédentes).
 
 4. Déployer les Edge Functions :
@@ -104,12 +104,14 @@ Depuis `0020_centralized_shared_rounds.sql`, tous les appareils suivent
   joueurs de démonstration locaux ne s'affichent qu'avec
   `--dart-define=ENABLE_TEST_DATA=true` (développement d'interface).
 
-Le site public React `/predictor` affiche la cote programmée exacte de la
-manche et l'historique. La migration `0025_demo_round_predictions.sql`
-rend ces cotes accessibles publiquement : **ne jamais appliquer cette
-migration ni déployer ce site sur un environnement de jeu réel**. Le jeu
-reste une démonstration à argent virtuel. Un arrêt forcé par un admin peut
-faire crasher une manche avant sa cote programmée.
+Le site React `/player-login` permet aux joueurs de se connecter avec
+leurs identifiants existants, puis `/predictor` affiche la cote programmée
+exacte de la manche. Les migrations `0025_demo_round_predictions.sql`
+et `0026_player_only_demo_predictions.sql` exposent ces cotes aux joueurs
+connectés ayant un profil actif : **ne jamais les appliquer ni déployer ce
+site sur un environnement de jeu réel**. Le jeu reste une démonstration à
+argent virtuel. Un arrêt forcé par un admin peut faire crasher une manche
+avant sa cote programmée.
 
 ## 4. Création des sous-comptes et configuration des permissions
 
