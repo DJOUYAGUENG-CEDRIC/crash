@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -20,10 +22,12 @@ class LiveMultiplierBuilder extends StatefulWidget {
     super.key,
     required this.round,
     required this.builder,
+    this.maxMultiplier,
   });
 
   final GameRound? round;
   final Widget Function(BuildContext context, double multiplier) builder;
+  final double? maxMultiplier;
 
   @override
   State<LiveMultiplierBuilder> createState() => _LiveMultiplierBuilderState();
@@ -49,7 +53,12 @@ class _LiveMultiplierBuilderState extends State<LiveMultiplierBuilder>
     final round = widget.round;
     if (round == null) return 1.0;
     if (round.status == RoundStatus.running) {
-      return round.liveMultiplier(GameConstants.growthRate, ServerClock.now());
+      final multiplier = round.liveMultiplier(
+        GameConstants.growthRate,
+        ServerClock.now(),
+      );
+      final maximum = widget.maxMultiplier;
+      return maximum == null ? multiplier : math.min(multiplier, maximum);
     }
     return round.crashMultiplier ?? 1.0;
   }

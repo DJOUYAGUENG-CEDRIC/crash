@@ -23,12 +23,16 @@ import '../helpers/fakes.dart';
 Widget _buildApp({
   required FakeGameService fakeGame,
   required GameRound? round,
+  double? targetMultiplier,
   List<Bet> myBets = const [],
 }) {
   return ProviderScope(
     overrides: [
       gameServiceProvider.overrideWithValue(fakeGame),
       currentRoundProvider.overrideWith((ref) => Stream.value(round)),
+      currentRoundTargetMultiplierProvider.overrideWith(
+        (ref) => Stream.value(targetMultiplier),
+      ),
       recentRoundsProvider.overrideWith((ref) async => const []),
       myBetsForCurrentRoundProvider.overrideWith((ref) => Stream.value(myBets)),
     ],
@@ -39,6 +43,28 @@ Widget _buildApp({
 }
 
 void main() {
+  testWidgets('plane crashes at the exact shared target without overshooting', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _buildApp(
+        fakeGame: FakeGameService(),
+        round: sampleRound(
+          status: RoundStatus.running,
+          runningStartedAt: DateTime.now().subtract(
+            const Duration(seconds: 20),
+          ),
+        ),
+        targetMultiplier: 3,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('global-crash-stage')), findsOneWidget);
+    expect(find.text('3.00x'), findsOneWidget);
+    expect(find.text('3.01x'), findsNothing);
+  });
+
   testWidgets('shows the crash animation before starting the next countdown', (
     tester,
   ) async {
@@ -49,6 +75,9 @@ void main() {
         overrides: [
           gameServiceProvider.overrideWithValue(FakeGameService()),
           currentRoundProvider.overrideWith((ref) => rounds.stream),
+          currentRoundTargetMultiplierProvider.overrideWith(
+            (ref) => Stream.value(null),
+          ),
           recentRoundsProvider.overrideWith((ref) async => const []),
           myBetsForCurrentRoundProvider.overrideWith(
             (ref) => Stream.value(const []),
@@ -65,7 +94,13 @@ void main() {
     await tester.pump();
     expect(find.byKey(const ValueKey('global-crash-stage')), findsOneWidget);
 
-    rounds.add(sampleRound(status: RoundStatus.waiting, countdown: 7));
+    rounds.add(
+      sampleRound(
+        id: 'round-2',
+        status: RoundStatus.waiting,
+        countdown: 7,
+      ),
+    );
     await tester.pump();
     await tester.pump();
     expect(find.byKey(const ValueKey('global-crash-stage')), findsOneWidget);

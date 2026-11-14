@@ -66,6 +66,10 @@ class FakeGameService extends GameService {
   double? lastAutoCashout;
 
   @override
+  Stream<double?> watchRoundTargetMultiplier(String roundId) =>
+      Stream.value(null);
+
+  @override
   Future<Bet> placeBet({
     required String roundId,
     required int slot,

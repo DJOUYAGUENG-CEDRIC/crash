@@ -38,9 +38,13 @@ export function PredictorPage() {
   useEffect(() => {
     let active = true;
     let refreshing = false;
+    let refreshRequested = false;
 
     async function refresh() {
-      if (refreshing) return;
+      if (refreshing) {
+        refreshRequested = true;
+        return;
+      }
       refreshing = true;
       try {
         const currentRound = await loadCurrentRound();
@@ -54,11 +58,21 @@ export function PredictorPage() {
         if (active) setError(errorMessage(loadError));
       } finally {
         refreshing = false;
+        if (active && refreshRequested) {
+          refreshRequested = false;
+          void refresh();
+        }
       }
+    }
+
+    function refreshWhenVisible() {
+      if (document.visibilityState === 'visible') void refresh();
     }
 
     void refresh();
     const timer = window.setInterval(() => void refresh(), 3000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('online', refreshWhenVisible);
     const channel = supabase
       .channel('current-demo-round-prediction')
       .on(
@@ -68,11 +82,15 @@ export function PredictorPage() {
           if (active) void refresh();
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (active && status === 'SUBSCRIBED') void refresh();
+      });
 
     return () => {
       active = false;
       window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('online', refreshWhenVisible);
       void supabase.removeChannel(channel);
     };
   }, [loadCurrentRound]);

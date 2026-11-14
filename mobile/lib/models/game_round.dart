@@ -64,6 +64,24 @@ class GameRound {
     final calculated = math.exp(growthRate * elapsedSeconds);
     return math.min(calculated, GameConstants.maxMultiplier);
   }
+
+  GameRound copyWith({
+    RoundStatus? status,
+    double? crashMultiplier,
+    DateTime? crashedAt,
+  }) => GameRound(
+    id: id,
+    roundNumber: roundNumber,
+    status: status ?? this.status,
+    crashMultiplier: crashMultiplier ?? this.crashMultiplier,
+    countdown: countdown,
+    bettingStartedAt: bettingStartedAt,
+    runningStartedAt: runningStartedAt,
+    crashedAt: crashedAt ?? this.crashedAt,
+    totalBetsAmount: totalBetsAmount,
+    totalPlayers: totalPlayers,
+    createdAt: createdAt,
+  );
 }
 
 double? _boundedMultiplier(num? value) {

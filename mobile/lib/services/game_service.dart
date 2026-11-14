@@ -82,6 +82,21 @@ class GameService {
         .toList();
   }
 
+  /// Target for the current demo round, exposed to active players by the
+  /// same table used by the web predictor. This bounds the local animation
+  /// and lets the plane stop at the server's exact crash point.
+  Stream<double?> watchRoundTargetMultiplier(String roundId) {
+    return _client
+        .from('demo_round_predictions')
+        .stream(primaryKey: ['round_id'])
+        .eq('round_id', roundId)
+        .map((rows) {
+          if (rows.isEmpty) return null;
+          final target = rows.first['target_multiplier'] as num?;
+          return target?.toDouble();
+        });
+  }
+
   /// The signed-in player's bets on the shared current round only.
   Stream<List<Bet>> watchMyBetsForRound(String roundId, String userId) {
     return _client

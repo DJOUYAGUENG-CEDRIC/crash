@@ -16,6 +16,13 @@ final currentRoundIdProvider = Provider<String?>((ref) {
   return ref.watch(currentRoundProvider.select((round) => round.value?.id));
 });
 
+/// Exact target shared with the web predictor for the current demo round.
+final currentRoundTargetMultiplierProvider = StreamProvider<double?>((ref) {
+  final roundId = ref.watch(currentRoundIdProvider);
+  if (roundId == null) return Stream.value(null);
+  return ref.watch(gameServiceProvider).watchRoundTargetMultiplier(roundId);
+});
+
 final recentRoundsProvider = FutureProvider<List<GameRound>>((ref) {
   return ref.watch(gameServiceProvider).fetchRecentRounds();
 });

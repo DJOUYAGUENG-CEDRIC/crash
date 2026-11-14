@@ -87,7 +87,10 @@ class _GameStageConnector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final round = ref.watch(currentRoundProvider).value;
-    return _GameStage(round: round);
+    final targetMultiplier = ref
+        .watch(currentRoundTargetMultiplierProvider)
+        .value;
+    return _GameStage(round: round, targetMultiplier: targetMultiplier);
   }
 }
 
@@ -131,9 +134,10 @@ class _GameTab extends StatelessWidget {
 }
 
 class _GameStage extends StatefulWidget {
-  const _GameStage({required this.round});
+  const _GameStage({required this.round, required this.targetMultiplier});
 
   final GameRound? round;
+  final double? targetMultiplier;
 
   @override
   State<_GameStage> createState() => _GameStageState();
@@ -148,6 +152,7 @@ class _GameStageState extends State<_GameStage>
   GameRound? _pendingRound;
   DateTime? _crashAnimationEndsAt;
   Timer? _roundTransitionTimer;
+  Timer? _targetCrashTimer;
 
   @override
   void initState() {
@@ -160,6 +165,7 @@ class _GameStageState extends State<_GameStage>
       vsync: this,
       duration: const Duration(milliseconds: 734),
     );
+    _scheduleTargetCrash();
     _syncAxisAnimation();
   }
 
@@ -174,14 +180,19 @@ class _GameStageState extends State<_GameStage>
       _pendingRound = null;
       _roundTransitionTimer?.cancel();
       _roundTransitionTimer = null;
+      _targetCrashTimer?.cancel();
+      _targetCrashTimer = null;
       if (isNewCrash) {
         _crashAnimationEndsAt = DateTime.now().add(_crashAnimationDuration);
       }
     } else if (_isCrashed(_displayedRound)) {
-      _pendingRound = nextRound;
-      _showPendingRoundAfterCrash();
+      if (nextRound?.id != _displayedRound?.id) {
+        _pendingRound = nextRound;
+        _showPendingRoundAfterCrash();
+      }
     } else {
       _displayedRound = nextRound;
+      _scheduleTargetCrash();
     }
     _syncAxisAnimation();
   }
@@ -189,6 +200,48 @@ class _GameStageState extends State<_GameStage>
   bool _isCrashed(GameRound? round) =>
       round?.status == RoundStatus.crashed ||
       round?.status == RoundStatus.result;
+
+  Duration? _timeToTargetCrash(GameRound round, double targetMultiplier) {
+    final startedAt = round.runningStartedAt;
+    if (round.status != RoundStatus.running || startedAt == null) return null;
+    final crashElapsedSeconds =
+        math.log(math.max(1.0, targetMultiplier)) / GameConstants.growthRate;
+    final crashAt = startedAt.add(
+      Duration(microseconds: (crashElapsedSeconds * 1000000).ceil()),
+    );
+    return crashAt.difference(ServerClock.now());
+  }
+
+  void _scheduleTargetCrash() {
+    _targetCrashTimer?.cancel();
+    _targetCrashTimer = null;
+    final round = widget.round;
+    final target = widget.targetMultiplier;
+    if (round == null || target == null) return;
+
+    final remaining = _timeToTargetCrash(round, target);
+    if (remaining == null) return;
+
+    void showCrash() {
+      if (!mounted || widget.round?.id != round.id) return;
+      setState(() {
+        _displayedRound = round.copyWith(
+          status: RoundStatus.crashed,
+          crashMultiplier: target,
+          crashedAt: ServerClock.now(),
+        );
+        _crashAnimationEndsAt = DateTime.now().add(_crashAnimationDuration);
+      });
+      _targetCrashTimer = null;
+      _syncAxisAnimation();
+    }
+
+    if (remaining <= Duration.zero) {
+      showCrash();
+    } else {
+      _targetCrashTimer = Timer(remaining, showCrash);
+    }
+  }
 
   void _showPendingRoundAfterCrash() {
     final endsAt = _crashAnimationEndsAt;
@@ -232,6 +285,7 @@ class _GameStageState extends State<_GameStage>
   @override
   void dispose() {
     _roundTransitionTimer?.cancel();
+    _targetCrashTimer?.cancel();
     _axisController.dispose();
     super.dispose();
   }
@@ -262,7 +316,10 @@ class _GameStageState extends State<_GameStage>
             ),
             RoundStatus.waiting ||
             RoundStatus.betting => _WaitingStage(round: round!),
-            RoundStatus.running => _RunningStage(round: round!),
+            RoundStatus.running => _RunningStage(
+              round: round!,
+              targetMultiplier: widget.targetMultiplier,
+            ),
             RoundStatus.crashed ||
             RoundStatus.result => _CrashedStage(round: round!),
           },
@@ -629,14 +686,28 @@ class _CountdownPainter extends CustomPainter {
 }
 
 class _RunningStage extends StatelessWidget {
-  const _RunningStage({required this.round});
+  const _RunningStage({required this.round, required this.targetMultiplier});
 
   final GameRound round;
+  final double? targetMultiplier;
 
   @override
   Widget build(BuildContext context) {
+    final target = targetMultiplier;
+    if (target == null) {
+      return const Center(
+        child: Text(
+          'Synchronisation de la cote en cours…',
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
+    }
+
+    final targetElapsedSeconds =
+        math.log(math.max(1.0, target)) / GameConstants.growthRate;
     return LiveMultiplierBuilder(
       round: round,
+      maxMultiplier: target,
       builder: (context, multiplier) {
         final rawElapsedSeconds = round.runningStartedAt == null
             ? 0.0
@@ -644,7 +715,10 @@ class _RunningStage extends StatelessWidget {
                       .difference(round.runningStartedAt!)
                       .inMilliseconds /
                   1000.0;
-        final elapsedSeconds = rawElapsedSeconds;
+        final elapsedSeconds = math.min(
+          rawElapsedSeconds,
+          targetElapsedSeconds,
+        );
         return Stack(
           fit: StackFit.expand,
           children: [
