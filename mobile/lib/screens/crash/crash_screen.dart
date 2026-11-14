@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -140,11 +141,21 @@ class _GameStage extends StatefulWidget {
 
 class _GameStageState extends State<_GameStage>
     with SingleTickerProviderStateMixin {
+  static const _crashAnimationDuration = Duration(milliseconds: 900);
+
   late final AnimationController _axisController;
+  GameRound? _displayedRound;
+  GameRound? _pendingRound;
+  DateTime? _crashAnimationEndsAt;
+  Timer? _roundTransitionTimer;
 
   @override
   void initState() {
     super.initState();
+    _displayedRound = widget.round;
+    if (_isCrashed(widget.round)) {
+      _crashAnimationEndsAt = DateTime.now().add(_crashAnimationDuration);
+    }
     _axisController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 734),
@@ -155,11 +166,59 @@ class _GameStageState extends State<_GameStage>
   @override
   void didUpdateWidget(covariant _GameStage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final nextRound = widget.round;
+    if (_isCrashed(nextRound)) {
+      final isNewCrash =
+          !_isCrashed(_displayedRound) || _displayedRound?.id != nextRound?.id;
+      _displayedRound = nextRound;
+      _pendingRound = null;
+      _roundTransitionTimer?.cancel();
+      _roundTransitionTimer = null;
+      if (isNewCrash) {
+        _crashAnimationEndsAt = DateTime.now().add(_crashAnimationDuration);
+      }
+    } else if (_isCrashed(_displayedRound)) {
+      _pendingRound = nextRound;
+      _showPendingRoundAfterCrash();
+    } else {
+      _displayedRound = nextRound;
+    }
     _syncAxisAnimation();
   }
 
+  bool _isCrashed(GameRound? round) =>
+      round?.status == RoundStatus.crashed ||
+      round?.status == RoundStatus.result;
+
+  void _showPendingRoundAfterCrash() {
+    final endsAt = _crashAnimationEndsAt;
+    final remaining = endsAt == null
+        ? Duration.zero
+        : endsAt.difference(DateTime.now());
+    if (remaining <= Duration.zero) {
+      _displayedRound = _pendingRound;
+      _pendingRound = null;
+      _crashAnimationEndsAt = null;
+      _roundTransitionTimer?.cancel();
+      _roundTransitionTimer = null;
+      return;
+    }
+
+    _roundTransitionTimer?.cancel();
+    _roundTransitionTimer = Timer(remaining, () {
+      if (!mounted) return;
+      setState(() {
+        _displayedRound = _pendingRound;
+        _pendingRound = null;
+        _crashAnimationEndsAt = null;
+        _roundTransitionTimer = null;
+      });
+      _syncAxisAnimation();
+    });
+  }
+
   void _syncAxisAnimation() {
-    if (widget.round?.status == RoundStatus.running) {
+    if (_displayedRound?.status == RoundStatus.running) {
       if (!_axisController.isAnimating) {
         _axisController.repeat();
       }
@@ -172,13 +231,14 @@ class _GameStageState extends State<_GameStage>
 
   @override
   void dispose() {
+    _roundTransitionTimer?.cancel();
     _axisController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final round = widget.round;
+    final round = _displayedRound;
     return Container(
       height: 160,
       width: double.infinity,
@@ -365,10 +425,10 @@ class _WaitingStageState extends State<_WaitingStage>
               );
         final seconds = remainingMs == null
             ? (widget.round.countdown ?? 0)
-                  .clamp(0, GameConstants.bettingDurationSeconds)
+                  .clamp(1, GameConstants.bettingDurationSeconds)
                   .toInt()
             : (remainingMs / 1000).ceil().clamp(
-                0,
+                1,
                 GameConstants.bettingDurationSeconds,
               );
         final ballProgress = elapsedMs == null

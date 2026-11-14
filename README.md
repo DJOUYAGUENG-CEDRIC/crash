@@ -100,9 +100,11 @@ Depuis `0020_centralized_shared_rounds.sql`, tous les appareils suivent
   perdue — il n'y a plus de « vol personnel » par joueur ;
 - l'application aligne son horloge sur celle du serveur (`server_now()`)
   pour que l'animation soit identique sur tous les téléphones ;
-- le tableau des mises n'affiche que les mises réelles du serveur. Des
-  joueurs de démonstration locaux ne s'affichent qu'avec
-  `--dart-define=ENABLE_TEST_DATA=true` (développement d'interface).
+- le tableau des mises affiche les paris réels du serveur ainsi que des
+  joueurs simulés explicitement identifiés dans les builds de démonstration
+  en release. Cette simulation locale ne modifie ni les paris ni les
+  soldes serveur. Désactivez-la avec
+  `--dart-define=ENABLE_TEST_DATA=false`.
 
 Le site React `/player-login` permet aux joueurs de se connecter avec
 leurs identifiants existants, puis `/predictor` affiche la cote programmée

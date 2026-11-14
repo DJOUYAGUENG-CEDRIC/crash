@@ -114,6 +114,7 @@ GameRound sampleRound({
   int roundNumber = 1,
   RoundStatus status = RoundStatus.betting,
   double? crashMultiplier,
+  int? countdown,
   DateTime? bettingStartedAt,
   DateTime? runningStartedAt,
 }) {
@@ -122,6 +123,7 @@ GameRound sampleRound({
     roundNumber: roundNumber,
     status: status,
     crashMultiplier: crashMultiplier,
+    countdown: countdown,
     bettingStartedAt: bettingStartedAt,
     runningStartedAt: runningStartedAt,
     crashedAt: null,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -203,10 +204,12 @@ class _LiveBetsTableState extends ConsumerState<LiveBetsTable> {
     );
   }
 
-  /// Locally generated demo players. Off by default: the table must show
-  /// the same server-side bets on every device. Enable only for UI work
-  /// with --dart-define=ENABLE_TEST_DATA=true.
-  static const bool _testDataEnabled = bool.fromEnvironment('ENABLE_TEST_DATA');
+  /// Simulated spectators appear in release builds of the virtual-money demo.
+  /// They are local display data and never affect server bets or balances.
+  static const bool _testDataEnabled = bool.fromEnvironment(
+    'ENABLE_TEST_DATA',
+    defaultValue: kReleaseMode,
+  );
 
   List<LiveBet> _buildTestBets(GameRound round) {
     final random = math.Random(round.roundNumber);

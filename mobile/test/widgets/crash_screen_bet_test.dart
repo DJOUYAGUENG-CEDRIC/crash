@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:crashx/core/utils/formatters.dart';
 import 'package:crashx/models/bet.dart';
 import 'package:crashx/models/enums.dart';
@@ -37,6 +39,88 @@ Widget _buildApp({
 }
 
 void main() {
+  testWidgets('shows the crash animation before starting the next countdown', (
+    tester,
+  ) async {
+    final rounds = StreamController<GameRound?>();
+    addTearDown(rounds.close);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          gameServiceProvider.overrideWithValue(FakeGameService()),
+          currentRoundProvider.overrideWith((ref) => rounds.stream),
+          recentRoundsProvider.overrideWith((ref) async => const []),
+          myBetsForCurrentRoundProvider.overrideWith(
+            (ref) => Stream.value(const []),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: SizedBox(height: 900, child: CrashScreen())),
+        ),
+      ),
+    );
+
+    rounds.add(sampleRound(status: RoundStatus.crashed, crashMultiplier: 2));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(const ValueKey('global-crash-stage')), findsOneWidget);
+
+    rounds.add(sampleRound(status: RoundStatus.waiting, countdown: 7));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byKey(const ValueKey('global-crash-stage')), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.style?.fontSize == 40 &&
+            widget.data == '7',
+      ),
+      findsNothing,
+    );
+
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byKey(const ValueKey('global-crash-stage')), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('global-crash-stage')), findsNothing);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.style?.fontSize == 40 &&
+            widget.data == '7',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('countdown stays at 1 instead of displaying 0', (tester) async {
+    final fakeGame = FakeGameService();
+    await tester.pumpWidget(
+      _buildApp(
+        fakeGame: fakeGame,
+        round: sampleRound(
+          status: RoundStatus.betting,
+          countdown: 0,
+          bettingStartedAt: DateTime.now().subtract(const Duration(seconds: 8)),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.data == '1' &&
+            widget.style?.fontSize == 40,
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets(
     'PLACER UN PARI places the default quick amount while betting is open',
     (tester) async {
