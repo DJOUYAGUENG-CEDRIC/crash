@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { errorMessage } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { errorMessage } from '../context/ToastContext';
 import { supabase } from '../lib/supabase';
 import type { DemoRoundPredictionRow } from '../types/database';
 
@@ -15,12 +15,19 @@ function statusLabel(status: DemoRoundPredictionRow['status']): string {
     case 'BETTING':
       return 'Paris ouverts';
     case 'RUNNING':
-      return 'Manche en cours';
+      return 'Tour en cours';
     case 'CRASHED':
-      return 'Manche terminée';
+      return 'Tour terminé';
     case 'RESULT':
       return 'Résultat';
   }
+}
+
+function displayedMultiplier(round: DemoRoundPredictionRow): number {
+  if (isFinished(round.status) && round.crash_multiplier !== null) {
+    return Number(round.crash_multiplier);
+  }
+  return Number(round.target_multiplier);
 }
 
 export function PredictorPage() {
@@ -37,7 +44,7 @@ export function PredictorPage() {
     };
   }, []);
 
-  const loadRound = useCallback(async (): Promise<DemoRoundPredictionRow | null> => {
+  const loadCurrentRound = useCallback(async (): Promise<DemoRoundPredictionRow | null> => {
     const { data, error: queryError } = await supabase
       .from('demo_round_predictions')
       .select('*')
@@ -51,25 +58,29 @@ export function PredictorPage() {
 
   useEffect(() => {
     let active = true;
+    let refreshing = false;
 
     async function refresh() {
+      if (refreshing) return;
+      refreshing = true;
       try {
-        const nextRound = await loadRound();
+        const currentRound = await loadCurrentRound();
         if (active) {
-          setRound(nextRound);
+          setRound(currentRound);
           setError(null);
         }
       } catch (loadError) {
         if (active) setError(errorMessage(loadError));
       } finally {
+        refreshing = false;
         if (active) setLoading(false);
       }
     }
 
     void refresh();
-
+    const refreshTimer = window.setInterval(() => void refresh(), 3000);
     const channel = supabase
-      .channel('demo-round-prediction')
+      .channel('current-demo-round-prediction')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'demo_round_predictions' },
@@ -79,22 +90,18 @@ export function PredictorPage() {
       )
       .subscribe((status) => {
         if (active && status === 'CHANNEL_ERROR') {
-          setError('Connexion interrompue. La cote sera actualisée au prochain chargement.');
+          setError('Connexion en direct interrompue ; actualisation automatique en cours.');
         }
       });
 
     return () => {
       active = false;
+      window.clearInterval(refreshTimer);
       void supabase.removeChannel(channel);
     };
-  }, [loadRound]);
+  }, [loadCurrentRound]);
 
   const finished = round ? isFinished(round.status) : false;
-  const multiplier = round
-    ? finished
-      ? round.crash_multiplier
-      : round.target_multiplier
-    : null;
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#078a43] px-5 py-12 text-white">
@@ -131,7 +138,7 @@ export function PredictorPage() {
               {finished ? 'Cote du crash' : 'Cote prévue'}
             </p>
             <h1 className="mt-2 text-[clamp(5rem,24vw,10rem)] font-black leading-none tracking-[-0.07em] tabular-nums drop-shadow-[0_8px_24px_rgba(0,0,0,0.15)]">
-              {multiplier === null ? '—' : `${Number(multiplier).toFixed(2)}x`}
+              {displayedMultiplier(round).toFixed(2)}x
             </h1>
             <span className="mt-7 inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/10 px-4 py-2 text-xs font-semibold text-white/90">
               {!finished && (
@@ -141,14 +148,17 @@ export function PredictorPage() {
             </span>
             {round.status === 'RUNNING' && (
               <p className="mt-5 max-w-sm text-xs leading-5 text-white/65">
-                La cote affichée est celle programmée pour la démo. Un arrêt manuel peut provoquer un crash plus tôt.
+                Cote programmée pour la démonstration. Un arrêt manuel peut provoquer un crash plus tôt.
               </p>
             )}
           </>
         ) : (
-          <p className="text-sm font-medium text-white/85">
-            Aucune manche disponible pour le moment.
-          </p>
+          <div className="max-w-sm">
+            <h1 className="text-xl font-bold">Aucun tour disponible</h1>
+            <p className="mt-2 text-sm leading-6 text-white/75">
+              La page se met à jour automatiquement dès que le serveur crée le prochain tour.
+            </p>
+          </div>
         )}
 
         {error && (
@@ -162,7 +172,7 @@ export function PredictorPage() {
       </section>
 
       <footer className="absolute bottom-5 px-5 text-center text-[10px] tracking-wide text-white/60">
-        Démonstration CRASHX — aucune valeur réelle
+        Démonstration CRASHX — argent virtuel uniquement
       </footer>
     </main>
   );
