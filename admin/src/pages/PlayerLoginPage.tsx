@@ -4,7 +4,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../context/ToastContext';
 import { supabase } from '../lib/supabase';
-import { hasActivePlayerProfile } from '../services/playerAccess';
+import {
+  hasActivePlayerProfile,
+  normalizePlayerLogin,
+} from '../services/playerAccess';
 
 export function PlayerLoginPage() {
   const { session, loading } = useAuth();
@@ -56,11 +59,16 @@ export function PlayerLoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    const normalizedEmail = normalizePlayerLogin(email);
+    if (!normalizedEmail) {
+      setError('Saisissez un identifiant valide ou une adresse e-mail valide.');
+      return;
+    }
     setSubmitting(true);
 
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: normalizedEmail,
         password,
       });
 
@@ -89,15 +97,15 @@ export function PlayerLoginPage() {
 
         <form className="space-y-4" onSubmit={(event) => void handleSubmit(event)}>
           <label className="block text-sm font-medium">
-            Adresse email
+            Identifiant ou adresse e-mail
             <input
-              type="email"
+              type="text"
               autoComplete="username"
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className="mt-1.5 w-full rounded-xl border border-white/25 bg-black/15 px-4 py-3 text-white outline-none placeholder:text-white/50 focus:border-white/70"
-              placeholder="joueur@exemple.com"
+              placeholder="Identifiant joueur ou email"
             />
           </label>
 
