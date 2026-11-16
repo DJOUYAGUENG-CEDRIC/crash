@@ -31,12 +31,13 @@ void main() {
     });
 
     test('the maximum multiplier is valid', () {
-      expect(BetValidation.isValidAutoCashout(15), isTrue);
+      expect(BetValidation.isValidAutoCashout(70), isTrue);
+      expect(BetValidation.isValidAutoCashout(30), isTrue);
     });
 
     test('above the maximum multiplier is invalid', () {
-      expect(BetValidation.isValidAutoCashout(15.01), isFalse);
-      expect(BetValidation.isValidAutoCashout(50), isFalse);
+      expect(BetValidation.isValidAutoCashout(70.01), isFalse);
+      expect(BetValidation.isValidAutoCashout(71), isFalse);
     });
   });
 }

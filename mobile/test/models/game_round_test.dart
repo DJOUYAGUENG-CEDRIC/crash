@@ -71,7 +71,7 @@ void main() {
       expect(at15s, greaterThan(at5s));
     });
 
-    test('ignores a leaked target and caps the visible multiplier at the 15x ceiling', () {
+    test('ignores a leaked target and caps the visible multiplier at the 70x ceiling', () {
       final start = DateTime.utc(2026, 1, 1, 12, 0, 0);
       final runningRound = GameRound.fromJson({
         'id': 'protected-round',
@@ -111,7 +111,6 @@ void main() {
 
       expect(round.crashMultiplier, GameConstants.maxMultiplier);
     });
-
     test('is 1.0 when the round is not running, regardless of the clock', () {
       final round = _round(status: RoundStatus.betting, runningStartedAt: null);
       expect(round.liveMultiplier(growthRate, DateTime.now()), 1.0);

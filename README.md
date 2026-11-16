@@ -55,10 +55,11 @@ continuer (licences Android non acceptées : `flutter doctor --android-licenses`
    ```
 
    Fichiers, dans l'ordre numérique : `supabase/migrations/0001_initial_schema.sql`
-   → … → `0028_launch_on_countdown_one.sql` (toujours appliquer toutes
-   les migrations, chacune remplace les fonctions des précédentes).
-   La dernière migration fixe le décompte à 7 et lance le vol dès l'arrivée
-   sur 1, sans seconde d'attente supplémentaire.
+   → … → `0029_raise_multiplier_cap_and_cycle_high_rounds.sql` (toujours
+   appliquer toutes les migrations, chacune remplace les fonctions des précédentes).
+   La migration `0028` fixe le décompte à 7 et lance le vol dès l'arrivée
+   sur 1, sans seconde d'attente supplémentaire. La migration `0029` relève
+   le plafond à 70x et programme une cote entre 30x et 70x toutes les 8 manches.
 
 4. Déployer les Edge Functions :
 
@@ -95,8 +96,8 @@ Depuis `0020_centralized_shared_rounds.sql`, tous les appareils suivent
 **la même manche** générée par le serveur :
 
 - le point de crash est tiré côté serveur (`generate_crash_multiplier`,
-  plafond 15x) et publié à l'avance par le site `/predictor` pour cette
-  démonstration uniquement ;
+  plafond 70x ; chaque 8e manche vise aléatoirement entre 30x et 70x) et
+  publié à l'avance par le site `/predictor` pour cette démonstration uniquement ;
 - les encaissements (manuels et automatiques) sont réglés sur le
   multiplicateur de la manche ; toute mise encore active au crash est
   perdue — il n'y a plus de « vol personnel » par joueur ;

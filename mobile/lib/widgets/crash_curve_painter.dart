@@ -22,6 +22,7 @@ class CrashCurvePainter extends CustomPainter {
     required this.multiplier,
     required this.elapsedSeconds,
     required this.crashed,
+    this.flightDurationSeconds = CrashCurvePainter.animationDurationSeconds,
     this.explosionProgress = .42,
     this.drawPlane = true,
   });
@@ -29,6 +30,7 @@ class CrashCurvePainter extends CustomPainter {
   final double multiplier;
   final double elapsedSeconds;
   final bool crashed;
+  final double flightDurationSeconds;
 
   /// 0 = impact, 1 = smoke fully dispersed. This is visual only: the
   /// server timestamp remains the single source of truth for the crash.
@@ -53,7 +55,7 @@ class CrashCurvePainter extends CustomPainter {
   static const double _topPlaneClearance = 28.0;
 
   double get _tFraction =>
-      (elapsedSeconds / animationDurationSeconds).clamp(0.0, 1.0);
+      (elapsedSeconds / flightDurationSeconds).clamp(0.0, 1.0);
 
   double _xOf(double size, double tFraction) {
     final startX = size * _startXFraction;

@@ -95,6 +95,32 @@ void main() {
     expect(find.text('3.01x'), findsNothing);
   });
 
+  testWidgets('plane keeps moving during a high-multiplier flight', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _buildApp(
+        fakeGame: FakeGameService(),
+        round: sampleRound(
+          status: RoundStatus.running,
+          runningStartedAt: DateTime.now().subtract(
+            const Duration(seconds: 15),
+          ),
+        ),
+        targetMultiplier: 30,
+      ),
+    );
+    await tester.pump();
+
+    final plane = find.byType(Image);
+    expect(plane, findsOneWidget);
+    expect(
+      tester.getCenter(plane).dx,
+      lessThan(tester.view.physicalSize.width / 2),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('shows the crash animation before starting the next countdown', (
     tester,
   ) async {

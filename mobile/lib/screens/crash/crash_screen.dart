@@ -709,6 +709,9 @@ class _RunningStage extends StatelessWidget {
 
     final targetElapsedSeconds =
         math.log(math.max(1.0, target)) / GameConstants.growthRate;
+    final animationDurationSeconds = math
+        .max(CrashCurvePainter.animationDurationSeconds, targetElapsedSeconds)
+        .toDouble();
     return LiveMultiplierBuilder(
       round: round,
       maxMultiplier: target,
@@ -730,11 +733,15 @@ class _RunningStage extends StatelessWidget {
               painter: CrashCurvePainter(
                 multiplier: multiplier,
                 elapsedSeconds: elapsedSeconds,
+                flightDurationSeconds: animationDurationSeconds,
                 crashed: false,
                 drawPlane: false,
               ),
             ),
-            _PlaneSprite(elapsedSeconds: elapsedSeconds),
+            _PlaneSprite(
+              elapsedSeconds: elapsedSeconds,
+              animationDurationSeconds: animationDurationSeconds,
+            ),
             Positioned(
               right: 22,
               bottom: 18,
@@ -759,15 +766,18 @@ class _RunningStage extends StatelessWidget {
 }
 
 class _PlaneSprite extends StatelessWidget {
-  const _PlaneSprite({required this.elapsedSeconds});
+  const _PlaneSprite({
+    required this.elapsedSeconds,
+    required this.animationDurationSeconds,
+  });
 
   final double elapsedSeconds;
+  final double animationDurationSeconds;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      final t = (elapsedSeconds / CrashCurvePainter.animationDurationSeconds)
-          .clamp(0.0, 1.0);
+      final t = (elapsedSeconds / animationDurationSeconds).clamp(0.0, 1.0);
       final width = constraints.maxWidth;
       final height = constraints.maxHeight;
       final x = width * (.02 + (.73 - .02) * t);
@@ -809,6 +819,9 @@ class _CrashedStage extends StatelessWidget {
     final elapsedSeconds = crashValue <= 1
         ? 0.0
         : math.log(crashValue) / GameConstants.growthRate;
+    final animationDurationSeconds = math
+        .max(CrashCurvePainter.animationDurationSeconds, elapsedSeconds)
+        .toDouble();
     return TweenAnimationBuilder<double>(
       key: const ValueKey('global-crash-stage'),
       tween: Tween(begin: 0, end: 1),
@@ -821,6 +834,7 @@ class _CrashedStage extends StatelessWidget {
             painter: CrashCurvePainter(
               multiplier: crashValue,
               elapsedSeconds: elapsedSeconds,
+              flightDurationSeconds: animationDurationSeconds,
               crashed: true,
               explosionProgress: explosionProgress,
             ),
