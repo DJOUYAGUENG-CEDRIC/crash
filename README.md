@@ -55,13 +55,13 @@ continuer (licences Android non acceptées : `flutter doctor --android-licenses`
    ```
 
    Fichiers, dans l'ordre numérique : `supabase/migrations/0001_initial_schema.sql`
-   → … → `0030_weighted_crash_multiplier_distribution.sql` (toujours
+   → … → `0032_lower_high_crash_probability.sql` (toujours
    appliquer toutes les migrations, chacune remplace les fonctions des précédentes).
    La migration `0028` fixe le décompte à 7 et lance le vol dès l'arrivée
    sur 1, sans seconde d'attente supplémentaire. La migration `0029` relève
-   le plafond à 70x. La migration `0030` configure chaque manche automatique
-   avec 80 % de petites cotes (1,00x–2,00x), 18 % de moyennes cotes
-   (2,01x–10,00x) et 2 % de grosses cotes (10,01x–70,00x).
+   le plafond à 70x. La migration `0032` répartit aléatoirement les manches
+   automatiques ainsi : 90 % jusqu'à 2,00x, 9 % de 2,01x à 10,00x,
+   0,9 % de 10,01x à 30,00x et 0,1 % de 30,01x à 70,00x.
 
 4. Déployer les Edge Functions :
 
@@ -98,8 +98,8 @@ Depuis `0020_centralized_shared_rounds.sql`, tous les appareils suivent
 **la même manche** générée par le serveur :
 
 - le point de crash est tiré côté serveur (`generate_crash_multiplier`,
-  plafond 70x ; distribution pondérée : 80 % de cotes de 1x à 2x, 18 % de
-  2,01x à 10x et 2 % de 10,01x à 70x) et
+  plafond 70x ; probabilité d'environ 90 % jusqu'à 2x, 9 % de 2,01x à 10x,
+  0,9 % de 10,01x à 30x et 0,1 % de 30,01x à 70x par manche) et
   publié à l'avance par le site `/predictor` pour cette démonstration uniquement ;
 - les encaissements (manuels et automatiques) sont réglés sur le
   multiplicateur de la manche ; toute mise encore active au crash est
